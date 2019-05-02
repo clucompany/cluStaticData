@@ -1,0 +1,14 @@
+[package]
+name = "cluOnceStatic"
+version = "0.1.0"
+authors = ["Denis Kotlyarov (Денис Котляров) <denis2005991@gmail.com>"]
+repository = "https://github.com/clucompany/cluOnceStatic.git"
+license = "Apache-2.0"
+readme = "README.md"
+edition = "2018"
+
+description = ""
+keywords = ["once_static_data", "static_data", "cluOnceStatic", "clucompany"]
+categories = ["development-tools"]
+
+[dependencies]
