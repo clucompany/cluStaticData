@@ -1,7 +1,8 @@
 [package]
 name = "cluOnceStatic"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Denis Kotlyarov (Денис Котляров) <denis2005991@gmail.com>"]
+exclude = ["/.travis.yml"]
 repository = "https://github.com/clucompany/cluOnceStatic.git"
 license = "Apache-2.0"
 readme = "README.md"
@@ -12,3 +13,4 @@ keywords = ["once_static_data", "static_data", "cluOnceStatic", "clucompany"]
 categories = ["development-tools"]
 
 [dependencies]
+

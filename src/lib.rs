@@ -4,6 +4,7 @@
 #![feature(once_is_completed)]
 #![feature(const_fn)]
 #![feature(const_raw_ptr_deref)]
+#![feature(associated_type_defaults)]
 
 use std::fmt::Display;
 use std::fmt::Debug;
@@ -14,6 +15,7 @@ use std::sync::Once;
 use std::sync::ONCE_INIT;
 use std::fmt;
 
+pub (crate) mod static_core;
 
 #[macro_export]
 macro_rules! static_data {
@@ -24,7 +26,6 @@ macro_rules! static_data {
 	] => {
 		$(#[$($mt)*])*
 		static $name: $crate::StaticData<$t> = $crate::StaticData::new($a);
-
 		
 		static_data! {
 			$($tt)*
@@ -47,87 +48,133 @@ macro_rules! static_data {
 	() => ()
 }
 
+pub type StaticData<T> = RawStaticData<T, Once>;
 
-pub struct StaticData<T> {
-	value: UnsafeCell<T>
+pub struct RawStaticData<T, Once> where Once: StaticOnce {
+	value: UnsafeCell<T>,
+	once: Once,
 }
 
-impl<T> StaticData<T> {
+unsafe impl<T, O> Sync for RawStaticData<T, O> where T: Sync + Send, O: StaticOnce {}
+unsafe impl<T, O> Send for RawStaticData<T, O> where T: Send, O: StaticOnce {}
+
+impl<T> RawStaticData<T, Once> {
 	#[inline]
 	pub const fn new(a: T) -> Self {
+		//static INIT: Once = ONCE_INIT;
 		Self {
-			value: UnsafeCell::new(a)
+			value: UnsafeCell::new(a),
+			once: ONCE_INIT,
 		}
 	}
-	
-	#[inline(always)]
-	fn as_init(&self) -> &Once {
-		static INIT: Once = ONCE_INIT;
-		&INIT
-	}
-	
-	pub fn set_slice(&self, v: T) -> Result<(), StaticErr<T>> where T: Copy {
-		match self.set(v) {
-			true => Ok(()),
-			_ => Err( StaticErr::new(v, StaticTErr::PrevLock) )
-		}
-	}
-	
-	pub fn set(&self, v: T) -> bool {
-		let mut is_set = false;
+}
+
+impl<T, O> RawStaticData<T, O>  where O: StaticOnce {
+	pub fn set_once(&self, v: T) -> Result<(), StaticTErr> {
+		let mut err = Err(StaticTErr::PrevLock);
 				
-		self.as_init().call_once(|| {
+		self.once.raw_lock_once(|| {
 			unsafe{
 				*self.value.get() = v;
 			}
-			
-			is_set = true;
+			err = Ok( () );
 		});
-		is_set
+		err	
 	}
 	
-	pub fn replace(&self, v: T) -> Result<T, StaticErr<T>> where T: Copy {
+	pub fn replace_once(&self, v: T) -> Result<T, StaticTErr> {
 		let mut result: Option<T> = None;
 				
-		self.as_init().call_once(|| {
+		self.once.raw_lock_once(|| {
 			result = Some(std::mem::replace(unsafe { &mut *self.value.get() }, v));
 		});
 		
 		match result {
 			Some(a) => Ok(a),
-			None => Err( StaticErr::new(v, StaticTErr::PrevLock) )
-		}
+			//None => Err( StaticErr::new(v, StaticTErr::PrevLock) )
+			_ => Err( StaticTErr::PrevLock )
+		}	
+	}
+	pub unsafe fn replace(&self, v: T) -> T {
+		self.once.raw_lock_once(|| {});
+		
+		#[allow(unused_unsafe)]
+		std::mem::replace(unsafe { &mut *self.value.get() }, v)	
 	}
 	
 	
-	#[inline(always)]
 	pub const fn get<'a>(&'a self) -> &'a T {
-		unsafe{ &*self.value.get() }
+		unsafe{ &*self.value.get() }	
 	}
 	
-	#[inline(always)]
-	pub fn is_set(&self) -> bool {
-		self.as_init().is_completed()
+	pub fn get_once<'a>(&'a self) -> &'a T {
+		self.once.ignore_init_once();
+		self.get()
+	}
+	
+	#[inline]
+	pub fn is_init_state(&self) -> bool {
+		self.once.is_init_state()
+	}
+	
+	#[inline]
+	pub fn ignore_init_once(&self) -> bool {
+		self.once.ignore_init_once()
+	}
+	
+	#[inline]
+	pub fn raw_ignore_init_once(&self) {
+		self.once.raw_ignore_init_once()
+	}
+	
+	
+	#[inline]
+	pub fn is_noinit_state(&self) -> bool {
+		self.is_init_state()
 	}
 }
 
-unsafe impl<T> Sync for StaticData<T> {}
 
-impl<T> From<T> for StaticData<T> {
+
+
+
+pub trait StaticOnce {
+	fn raw_lock_once<F: FnOnce()>(&self, f: F);
+	
+
+	#[inline]
+	fn ignore_init_once(&self) -> bool {
+		let mut is_init = false;
+		self.raw_lock_once(|| {
+			is_init = true;
+		});
+		is_init
+	}
+	#[inline]
+	fn raw_ignore_init_once(&self) {
+		self.raw_lock_once(|| {});
+	}
+	
+	fn is_init_state(&self) -> bool;
+}
+
+
+
+/*impl<T, O> From<T> for RawStaticData<T, O> where O: StaticOnce {
 	#[inline(always)]
 	fn from(a: T) -> Self {
 		Self::new(a)
 	}
-}
+}*/
 
-impl<T> AsRef<T> for StaticData<T> {
+impl<T, O> AsRef<T> for RawStaticData<T, O> where O: StaticOnce {
 	#[inline(always)]
 	fn as_ref(&self) -> &T {
 		self.get()
 	}
 }
 
-impl<T> Deref for StaticData<T> {
+impl<T, O> Deref for RawStaticData<T, O> where O: StaticOnce {
 	type Target = T;
 	
 	#[inline(always)]
@@ -136,14 +183,14 @@ impl<T> Deref for StaticData<T> {
 	}
 }
 
-impl<T> Debug for StaticData<T> where T: Debug {
+impl<T, O> Debug for RawStaticData<T, O> where T: Debug, O: StaticOnce {
 	#[inline(always)]
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		(**self).fmt(f)
 	}
 }
 
-impl<T> Display for StaticData<T> where T: Display {
+impl<T, O> Display for RawStaticData<T, O> where T: Display, O: StaticOnce {
 	#[inline(always)]
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		(**self).fmt(f)
@@ -165,7 +212,7 @@ impl Default for StaticTErr {
 
 #[derive(Debug)]
 pub struct StaticErr<T> {
-	r#arg:	T,
+	data:	T,
 	r#type:	StaticTErr,
 }
 
@@ -174,14 +221,14 @@ impl<T> StaticErr<T> {
 	#[inline]
 	pub const fn new(arg: T, err: StaticTErr) -> Self {
 		Self {
-			r#arg:	arg,
+			data:	arg,
 			r#type:	err,
 		}
 	}
 	
 	#[inline]
 	pub fn into_inner(self) -> T {
-		self.r#arg
+		self.data
 	}
 	
 	#[inline(always)]
@@ -191,7 +238,7 @@ impl<T> StaticErr<T> {
 	
 	#[inline(always)]
 	pub const fn as_inner(&self) -> &T {
-		&self.r#arg	
+		&self.data
 	}
 }
 

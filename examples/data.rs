@@ -17,16 +17,16 @@ fn main() {
 	println!("#1 {:?}", TEST);
 	assert_eq!(*TEST, TestValue::Unk);
 	
-	let result = TEST.set(TestValue::RuntimeValue(10));
-	assert_eq!(result, true);
+	let result = TEST.set_once(TestValue::RuntimeValue(10));
+	assert_eq!(result.is_ok(), true);
 	println!("#2 {:?}", TEST);
 	
-	let result = TEST.set(TestValue::RuntimeValue(20));
-	assert_eq!(result, false);
+	let result = TEST.set_once(TestValue::RuntimeValue(20));
+	assert_eq!(result.is_ok(), false);
 	assert_eq!(*TEST, TestValue::RuntimeValue(10));
 	println!("#3 {:?}", TEST);
 	
-	let result = TEST.replace(TestValue::Unk);
+	let result = TEST.replace_once(TestValue::Unk);
 	assert_eq!(result.is_err(), true);
-	println!("#4 {:?}", TEST.replace(TestValue::Unk));
+	println!("#4 {:?}", TEST.replace_once(TestValue::Unk));
 }

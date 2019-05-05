@@ -2,6 +2,7 @@
 #[macro_use]
 extern crate cluOnceStatic;
 
+use cluOnceStatic::StaticTErr;
 
 static_data! {
 	pub(crate) static ref DROPPER: MyDrop = MyDrop(0);
@@ -12,17 +13,19 @@ pub struct MyDrop(usize);
 
 impl Drop for MyDrop {
 	fn drop(&mut self) {
-		println!("drop {}", self.0);	
+		println!("drop MyDrop({})", self.0);	
 	}
 }
 
-fn main() {
-	DROPPER.set(MyDrop(1));
-	println!("#0 {:?}", DROPPER);
+fn main() -> Result<(), StaticTErr> {
+	DROPPER.set_once(MyDrop(1))?;
+	println!("this_value {:?} #0", DROPPER);
 	
-	DROPPER.set(MyDrop(2));
-	println!("#1 {:?}", DROPPER);
+	DROPPER.set_once(MyDrop(2))?;
+	println!("this_value {:?} #1", DROPPER);
 	
-	DROPPER.set(MyDrop(3));
-	println!("#2 {:?}", DROPPER);
+	DROPPER.set_once(MyDrop(3))?;
+	println!("this_value {:?} #2", DROPPER);
+	
+	Ok( () )
 }
