@@ -27,6 +27,18 @@ fn main() {
 	println!("#3 {:?}", TEST);
 	
 	let result = TEST.replace_once(TestValue::Unk);
+	assert_eq!(result, None);
+	println!("#4 {:?}", result);
+	
+	
+	//COPY
+	let result = TEST.replace_once_copy(TestValue::Unk);
 	assert_eq!(result.is_err(), true);
-	println!("#4 {:?}", TEST.replace_once(TestValue::Unk));
+	
+	println!("#5 result:{:?}", result);
+	let value = match result {
+		Ok(_a) => unreachable!(),
+		Err(e) => e.into_inner(),
+	};	
+	println!("#5 value:{:?}", value);
 }

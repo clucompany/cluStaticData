@@ -50,15 +50,15 @@ macro_rules! static_data {
 
 pub type StaticData<T> = RawStaticData<T, Once>;
 
-pub struct RawStaticData<T, Once> where Once: StaticOnce {
+pub struct RawStaticData<T, Once> where Once: StaticOnce, T: Sync {
 	value: UnsafeCell<T>,
 	once: Once,
 }
 
-unsafe impl<T, O> Sync for RawStaticData<T, O> where T: Sync + Send, O: StaticOnce {}
-unsafe impl<T, O> Send for RawStaticData<T, O> where T: Send, O: StaticOnce {}
+unsafe impl<T, O> Sync for RawStaticData<T, O> where T: Sync, O: StaticOnce {}
+unsafe impl<T, O> Send for RawStaticData<T, O> where T: Sync + Send, O: StaticOnce {}
 
-impl<T> RawStaticData<T, Once> {
+impl<T> RawStaticData<T, Once> where T: Sync {
 	#[inline]
 	pub const fn new(a: T) -> Self {
 		//static INIT: Once = ONCE_INIT;
@@ -69,7 +69,7 @@ impl<T> RawStaticData<T, Once> {
 	}
 }
 
-impl<T, O> RawStaticData<T, O>  where O: StaticOnce {
+impl<T, O> RawStaticData<T, O>  where O: StaticOnce, T: Sync {
 	pub fn set_once(&self, v: T) -> Result<(), StaticTErr> {
 		let mut err = Err(StaticTErr::PrevLock);
 				
@@ -81,8 +81,32 @@ impl<T, O> RawStaticData<T, O>  where O: StaticOnce {
 		});
 		err	
 	}
+	pub fn set_once_copy(&self, v: T) -> Result<(), StaticErr<T>> where T: Copy {
+		let mut is_err = true;
+				
+		self.once.raw_lock_once(|| {
+			unsafe{
+				*self.value.get() = v;
+			}
+			is_err = false;
+		});
+		match is_err {
+			false => Ok(()),
+			_ => Err( StaticErr::new(v, StaticTErr::PrevLock) )
+		}	
+	}
 	
-	pub fn replace_once(&self, v: T) -> Result<T, StaticTErr> {
+	pub fn replace_once(&self, v: T) -> Option<T> {
+		let mut result: Option<T> = None;
+				
+		self.once.raw_lock_once(|| {
+			result = Some(std::mem::replace(unsafe { &mut *self.value.get() }, v));
+		});
+		
+		result
+	}
+	
+	pub fn replace_once_copy(&self, v: T) -> Result<T, StaticErr<T>> where T: Copy {
 		let mut result: Option<T> = None;
 				
 		self.once.raw_lock_once(|| {
@@ -91,12 +115,15 @@ impl<T, O> RawStaticData<T, O>  where O: StaticOnce {
 		
 		match result {
 			Some(a) => Ok(a),
-			//None => Err( StaticErr::new(v, StaticTErr::PrevLock) )
-			_ => Err( StaticTErr::PrevLock )
-		}	
+			None => Err( StaticErr::new(v, StaticTErr::PrevLock) )
+		}
 	}
+	
+	
+	
+	
 	pub unsafe fn replace(&self, v: T) -> T {
-		self.once.raw_lock_once(|| {});
+		self.ignore_init_once();
 		
 		#[allow(unused_unsafe)]
 		std::mem::replace(unsafe { &mut *self.value.get() }, v)	
@@ -108,21 +135,21 @@ impl<T, O> RawStaticData<T, O>  where O: StaticOnce {
 	}
 	
 	pub fn get_once<'a>(&'a self) -> &'a T {
-		self.once.ignore_init_once();
+		self.ignore_init_once();
 		self.get()
 	}
 	
-	#[inline]
+	#[inline(always)]
 	pub fn is_init_state(&self) -> bool {
 		self.once.is_init_state()
 	}
 	
-	#[inline]
+	#[inline(always)]
 	pub fn ignore_init_once(&self) -> bool {
 		self.once.ignore_init_once()
 	}
 	
-	#[inline]
+	#[inline(always)]
 	pub fn raw_ignore_init_once(&self) {
 		self.once.raw_ignore_init_once()
 	}
@@ -130,7 +157,7 @@ impl<T, O> RawStaticData<T, O>  where O: StaticOnce {
 	
 	#[inline]
 	pub fn is_noinit_state(&self) -> bool {
-		self.is_init_state()
+		!self.is_init_state()
 	}
 }
 
@@ -167,14 +194,14 @@ pub trait StaticOnce {
 	}
 }*/
 
-impl<T, O> AsRef<T> for RawStaticData<T, O> where O: StaticOnce {
+impl<T, O> AsRef<T> for RawStaticData<T, O> where O: StaticOnce, T: Sync {
 	#[inline(always)]
 	fn as_ref(&self) -> &T {
 		self.get()
 	}
 }
 
-impl<T, O> Deref for RawStaticData<T, O> where O: StaticOnce {
+impl<T, O> Deref for RawStaticData<T, O> where O: StaticOnce, T: Sync {
 	type Target = T;
 	
 	#[inline(always)]
@@ -183,14 +210,14 @@ impl<T, O> Deref for RawStaticData<T, O> where O: StaticOnce {
 	}
 }
 
-impl<T, O> Debug for RawStaticData<T, O> where T: Debug, O: StaticOnce {
+impl<T, O> Debug for RawStaticData<T, O> where T: Debug, O: StaticOnce, T: Sync {
 	#[inline(always)]
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		(**self).fmt(f)
 	}
 }
 
-impl<T, O> Display for RawStaticData<T, O> where T: Display, O: StaticOnce {
+impl<T, O> Display for RawStaticData<T, O> where T: Display, O: StaticOnce, T: Sync {
 	#[inline(always)]
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		(**self).fmt(f)
