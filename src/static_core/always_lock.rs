@@ -8,7 +8,7 @@ pub enum AlwaysLockOnce {}
 
 impl StaticOnce for AlwaysLockOnce {
 	#[inline(always)]
-	fn raw_lock_once<F: FnOnce()>(&self, f: F) {}
+	fn raw_lock_once<F: FnOnce()>(&self, _f: F) {}
 	
 	#[inline(always)]
 	fn is_init_state(&self) -> bool {

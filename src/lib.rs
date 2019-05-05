@@ -1,11 +1,10 @@
 #![allow(non_snake_case)]
 
-#![feature(maybe_uninit)]
 #![feature(once_is_completed)]
 #![feature(const_fn)]
 #![feature(const_raw_ptr_deref)]
-#![feature(associated_type_defaults)]
 
+use crate::static_core::AlwaysLockOnce;
 use std::fmt::Display;
 use std::fmt::Debug;
 use std::cell::UnsafeCell;
@@ -48,9 +47,10 @@ macro_rules! static_data {
 	() => ()
 }
 
-pub type StaticData<T> = RawStaticData<T, Once>;
+pub type StaticData<T>			= RawStaticData<T, Once>;
+pub type StaticDataAlwaysLock<T>	= RawStaticData<T, AlwaysLockOnce>;
 
-pub struct RawStaticData<T, Once> where Once: StaticOnce, T: Sync {
+pub struct RawStaticData<T, Once> where Once: StaticOnce {
 	value: UnsafeCell<T>,
 	once: Once,
 }
@@ -58,7 +58,7 @@ pub struct RawStaticData<T, Once> where Once: StaticOnce, T: Sync {
 unsafe impl<T, O> Sync for RawStaticData<T, O> where T: Sync, O: StaticOnce {}
 unsafe impl<T, O> Send for RawStaticData<T, O> where T: Sync + Send, O: StaticOnce {}
 
-impl<T> RawStaticData<T, Once> where T: Sync {
+impl<T> RawStaticData<T, Once> {
 	#[inline]
 	pub const fn new(a: T) -> Self {
 		//static INIT: Once = ONCE_INIT;
@@ -69,23 +69,54 @@ impl<T> RawStaticData<T, Once> where T: Sync {
 	}
 }
 
-impl<T, O> RawStaticData<T, O>  where O: StaticOnce, T: Sync {
+
+impl<'a, T, O> RawStaticData<&'a T, O> where O: StaticOnce, T: 'static {
+	pub unsafe fn box_set_once(&self, v: Box<T>) -> Result<(), StaticTErr> {
+		let mut err = Err(StaticTErr::PrevLock);
+				
+		self.once.raw_lock_once(|| {
+			#[allow(unused_unsafe)]
+			unsafe {
+				*self.value.get() = &*Box::into_raw(v);
+			}
+			err = Ok( () );
+		});
+		err
+	}
+	pub unsafe fn set_raw_once(&self, v: T) -> Result<(), StaticTErr> {
+		let mut err = Err(StaticTErr::PrevLock);
+				
+		self.once.raw_lock_once(|| {
+			#[allow(unused_unsafe)]
+			unsafe {
+				let v = Box::new(v);
+				*self.value.get() = &*Box::into_raw(v);
+			}
+			err = Ok( () );
+		});
+		err
+	}
+}
+
+
+impl<T, O> RawStaticData<T, O> where O: StaticOnce {
 	pub fn set_once(&self, v: T) -> Result<(), StaticTErr> {
 		let mut err = Err(StaticTErr::PrevLock);
 				
 		self.once.raw_lock_once(|| {
-			unsafe{
+			unsafe {
 				*self.value.get() = v;
 			}
 			err = Ok( () );
 		});
 		err	
 	}
+	
 	pub fn set_once_copy(&self, v: T) -> Result<(), StaticErr<T>> where T: Copy {
 		let mut is_err = true;
 				
 		self.once.raw_lock_once(|| {
-			unsafe{
+			unsafe {
 				*self.value.get() = v;
 			}
 			is_err = false;
@@ -163,30 +194,6 @@ impl<T, O> RawStaticData<T, O>  where O: StaticOnce, T: Sync {
 
 
 
-
-
-pub trait StaticOnce {
-	fn raw_lock_once<F: FnOnce()>(&self, f: F);
-	
-
-	#[inline]
-	fn ignore_init_once(&self) -> bool {
-		let mut is_init = false;
-		self.raw_lock_once(|| {
-			is_init = true;
-		});
-		is_init
-	}
-	#[inline]
-	fn raw_ignore_init_once(&self) {
-		self.raw_lock_once(|| {});
-	}
-	
-	fn is_init_state(&self) -> bool;
-}
-
-
-
 /*impl<T, O> From<T> for RawStaticData<T, O> where O: StaticOnce {
 	#[inline(always)]
 	fn from(a: T) -> Self {
@@ -194,14 +201,14 @@ pub trait StaticOnce {
 	}
 }*/
 
-impl<T, O> AsRef<T> for RawStaticData<T, O> where O: StaticOnce, T: Sync {
+impl<T, O> AsRef<T> for RawStaticData<T, O> where O: StaticOnce {
 	#[inline(always)]
 	fn as_ref(&self) -> &T {
 		self.get()
 	}
 }
 
-impl<T, O> Deref for RawStaticData<T, O> where O: StaticOnce, T: Sync {
+impl<T, O> Deref for RawStaticData<T, O> where O: StaticOnce {
 	type Target = T;
 	
 	#[inline(always)]
@@ -210,14 +217,14 @@ impl<T, O> Deref for RawStaticData<T, O> where O: StaticOnce, T: Sync {
 	}
 }
 
-impl<T, O> Debug for RawStaticData<T, O> where T: Debug, O: StaticOnce, T: Sync {
+impl<T, O> Debug for RawStaticData<T, O> where T: Debug, O: StaticOnce {
 	#[inline(always)]
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		(**self).fmt(f)
 	}
 }
 
-impl<T, O> Display for RawStaticData<T, O> where T: Display, O: StaticOnce, T: Sync {
+impl<T, O> Display for RawStaticData<T, O> where T: Display, O: StaticOnce {
 	#[inline(always)]
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		(**self).fmt(f)
@@ -331,3 +338,73 @@ pub const fn set_boxed<S, v>(log: Box<S>) -> bool where S: StaticValue<V = v> + 
 }
 
 */
+
+
+
+
+pub trait StaticOnce {
+	fn raw_lock_once<F: FnOnce()>(&self, f: F);
+	
+
+	#[inline]
+	fn ignore_init_once(&self) -> bool {
+		let mut is_init = false;
+		self.raw_lock_once(|| {
+			is_init = true;
+		});
+		
+		is_init
+	}
+	
+	#[inline]
+	fn raw_ignore_init_once(&self) {
+		self.raw_lock_once(|| {});
+	}
+	
+	fn is_init_state(&self) -> bool;
+}
+
+
+impl<'a, 'c, A> StaticOnce for &'a A where A: StaticOnce + 'c {
+	#[inline(always)]
+	fn raw_lock_once<F: FnOnce()>(&self, f: F) {
+		A::raw_lock_once(self, f)
+	}
+
+	#[inline(always)]
+	fn ignore_init_once(&self) -> bool {
+		A::ignore_init_once(self)
+	}
+	
+	#[inline(always)]
+	fn raw_ignore_init_once(&self) {
+		A::raw_ignore_init_once(self)
+	}
+	
+	#[inline(always)]
+	fn is_init_state(&self) -> bool {
+		A::is_init_state(self)
+	}
+}
+
+impl<'a, A> StaticOnce for Box<A> where A: StaticOnce + 'a {
+	#[inline(always)]
+	fn raw_lock_once<F: FnOnce()>(&self, f: F) {
+		A::raw_lock_once(self, f)
+	}
+
+	#[inline(always)]
+	fn ignore_init_once(&self) -> bool {
+		A::ignore_init_once(self)
+	}
+	
+	#[inline(always)]
+	fn raw_ignore_init_once(&self) {
+		A::raw_ignore_init_once(self)
+	}
+	
+	#[inline(always)]
+	fn is_init_state(&self) -> bool {
+		A::is_init_state(self)
+	}
+}
