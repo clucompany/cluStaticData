@@ -161,72 +161,72 @@ unsafe impl<T, I> Sync for UnkStaticData<T, I> where T: Sync {}
 unsafe impl<T, I> Send for UnkStaticData<T, I> where T: Sync + Send {}
 
 //DONT TRAIT!
-impl<T, I> UnkStaticData<T, I> where Self: UnsafeInitUnkStaticData<T> {
+impl<T, I> UnkStaticData<T, I> where Self: UnsafeGenericStaticData<T> {
 	#[inline(always)]
 	pub unsafe fn set_box(&self, v: Box<T>) -> Result<(), StaticErr<Box<T>>> {
-		UnsafeInitUnkStaticData::set_box(self, v)
+		UnsafeGenericStaticData::set_box(self, v)
 	}
 	
 	#[inline(always)]
 	pub unsafe fn set_raw(&self, v: T) -> Result<(), StaticErr<T>> {
-		UnsafeInitUnkStaticData::set_raw(self, v)
+		UnsafeGenericStaticData::set_raw(self, v)
 	}
 }
 
 
 
 
-impl<T, I> UnkStaticData<T, I> where Self: SetInitUnkStaticData<T> {
+impl<T, I> UnkStaticData<T, I> where Self: GenericStaticData<T> {
 	#[inline(always)]
 	pub fn set(&self, v: T) -> Result<(), StaticErr<T>> {
-		SetInitUnkStaticData::set(self, v)
+		GenericStaticData::set(self, v)
 	}
 	
 	#[inline(always)]
 	pub fn replace(&self, v: T) -> Result<T, StaticErr<T>> {
-		SetInitUnkStaticData::replace(self, v)
+		GenericStaticData::replace(self, v)
 	}
 	
 	#[inline(always)]
 	pub unsafe fn unsafe_replace(&self, v: T) -> T {
-		SetInitUnkStaticData::unsafe_replace(self, v)
+		GenericStaticData::unsafe_replace(self, v)
 	}
 	
 	#[inline(always)]
 	pub fn get<'a>(&'a self) -> &'a T {
-		SetInitUnkStaticData::get(self)
+		GenericStaticData::get(self)
 	}
 	
 	#[inline(always)]
 	pub fn ignore_init(&self) -> Result<(), IgnoreInitErr> {
-		SetInitUnkStaticData::ignore_init(self)	
+		GenericStaticData::ignore_init(self)	
 	}
 	
 	#[inline(always)]
 	pub fn ignore_init_dont_result(&self) {
-		SetInitUnkStaticData::ignore_init_dont_result(self)
+		GenericStaticData::ignore_init_dont_result(self)
 	}
 	
 	#[inline(always)]
 	pub fn is_init_state(&self) -> bool {
-		SetInitUnkStaticData::is_init_state(self)	
+		GenericStaticData::is_init_state(self)	
 	}
 	
 	#[inline(always)]
 	pub fn is_noinit_state(&self) -> bool {
-		SetInitUnkStaticData::is_noinit_state(self)
+		GenericStaticData::is_noinit_state(self)
 	}
 }
 
 
-impl<T, I> AsRef<T> for UnkStaticData<T, I> where Self: SetInitUnkStaticData<T> {
+impl<T, I> AsRef<T> for UnkStaticData<T, I> where Self: GenericStaticData<T> {
 	#[inline(always)]
 	fn as_ref(&self) -> &T {
 		self.get()
 	}
 }
 
-impl<T, I> Deref for UnkStaticData<T, I> where Self: SetInitUnkStaticData<T> {
+impl<T, I> Deref for UnkStaticData<T, I> where Self: GenericStaticData<T> {
 	type Target = T;
 	
 	#[inline(always)]
@@ -251,7 +251,7 @@ impl<T, I> Display for UnkStaticData<T, I> where T: Display, Self: Deref<Target 
 
 
 
-pub trait SetInitUnkStaticData<T> {
+pub trait GenericStaticData<T> {
 	fn set(&self, v: T) -> Result<(), StaticErr<T>>;
 	fn replace(&self, v: T) -> Result<T, StaticErr<T>>;
 	
@@ -273,7 +273,7 @@ pub trait SetInitUnkStaticData<T> {
 	}
 }
 
-pub trait UnsafeInitUnkStaticData<T> {
+pub trait UnsafeGenericStaticData<T> {
 	unsafe fn set_box(&self, v: Box<T>) -> Result<(), StaticErr<Box<T>>>;
 	unsafe fn set_raw(&self, v: T) -> Result<(), StaticErr<T>>;
 }

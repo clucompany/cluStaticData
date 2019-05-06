@@ -1,6 +1,6 @@
 
 use crate::err::StaticErr;
-use crate::r#unsafe::UnsafeInitUnkStaticData;
+use crate::r#unsafe::UnsafeGenericStaticData;
 use crate::StaticInitErr;
 use std::sync::ONCE_INIT;
 use crate::UnkStaticData;
@@ -32,7 +32,7 @@ impl<T> UnkStaticData<T, Once> {
 }
 
 
-impl<T> UnsafeInitUnkStaticData<T> for UnkStaticData<&'static T, Once> {
+impl<T> UnsafeGenericStaticData<T> for UnkStaticData<&'static T, Once> {
 	type Box_Ok = ();
 	type Box_Err = StaticErr<Box<T>>;
 	

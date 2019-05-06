@@ -1,7 +1,7 @@
 
 use crate::err::IgnoreInitErr;
-use crate::SetInitUnkStaticData;
-use crate::UnsafeInitUnkStaticData;
+use crate::GenericStaticData;
+use crate::UnsafeGenericStaticData;
 use crate::err::StaticErr;
 use crate::UnkStaticData;
 use std::sync::atomic::AtomicUsize;
@@ -88,7 +88,7 @@ impl<T> UnkStaticData<T, AtomicUsize> {
 }
 
 
-impl<T> UnsafeInitUnkStaticData<T> for UnkStaticData<&'static T, AtomicUsize> where T: 'static {
+impl<T> UnsafeGenericStaticData<T> for UnkStaticData<&'static T, AtomicUsize> where T: 'static {
 	unsafe fn set_box(&self, v: Box<T>) -> Result<(), StaticErr<Box<T>>> {
 		self.lock_logic(v, |v| {
 			#[allow(unused_unsafe)]
@@ -112,7 +112,7 @@ impl<T> UnsafeInitUnkStaticData<T> for UnkStaticData<&'static T, AtomicUsize> wh
 	}
 }
 
-impl<T> SetInitUnkStaticData<T> for UnkStaticData<T, AtomicUsize> {
+impl<T> GenericStaticData<T> for UnkStaticData<T, AtomicUsize> {
 	fn set(&self, v: T) -> Result<(), StaticErr<T>> {
 		self.lock_logic(v, 
 			|v| { unsafe { *self.data.get() = v; } Ok( () )},

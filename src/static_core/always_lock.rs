@@ -1,7 +1,7 @@
 
 use crate::err::IgnoreInitErr;
-use crate::SetInitUnkStaticData;
-use crate::UnsafeInitUnkStaticData;
+use crate::GenericStaticData;
+use crate::UnsafeGenericStaticData;
 use crate::err::StaticErr;
 use crate::UnkStaticData;
 use std::cell::UnsafeCell;
@@ -28,7 +28,7 @@ impl<T> UnkStaticData<T, AlwaysLockOnce> {
 
 
 //UNSAFE
-impl<T> UnsafeInitUnkStaticData<T> for UnkStaticData<T, AlwaysLockOnce> {
+impl<T> UnsafeGenericStaticData<T> for UnkStaticData<T, AlwaysLockOnce> {
 	#[inline]
 	unsafe fn set_box(&self, v: Box<T>) -> Result<(), StaticErr<Box<T>>> {
 		Err(StaticErr::allow(v))
@@ -41,7 +41,7 @@ impl<T> UnsafeInitUnkStaticData<T> for UnkStaticData<T, AlwaysLockOnce> {
 }
 
 
-impl<T> SetInitUnkStaticData<T> for UnkStaticData<T, AlwaysLockOnce> {
+impl<T> GenericStaticData<T> for UnkStaticData<T, AlwaysLockOnce> {
 	#[inline]
 	fn set(&self, v: T) -> Result<(), StaticErr<T>> {
 		Err(StaticErr::allow(v))
