@@ -22,7 +22,6 @@ Methods for describing and creating static values. Implemented static value cons
 # Use (static trait data)
 
 ```
-
 use std::fmt::Debug;
 
 #[macro_use]

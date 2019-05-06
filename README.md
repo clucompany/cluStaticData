@@ -9,7 +9,6 @@ Methods for describing and creating static values. Implemented static value cons
 # Use (static trait data)
 
 ```
-
 use std::fmt::Debug;
 
 #[macro_use]
@@ -49,7 +48,6 @@ fn main() {
 # Use (static data, unk type)
 
 ```
-
 #[macro_use]
 extern crate cluStaticData;
 use cluStaticData::err::StaticErr;
