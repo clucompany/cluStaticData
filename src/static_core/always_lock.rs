@@ -1,11 +1,11 @@
 
-use crate::set::SetInitRawStaticData;
-use crate::set::IgnoreInitErr;
-use crate::set_unsafe::UnsafeInitRawStaticData;
+use crate::err::IgnoreInitErr;
+use crate::set::SetInitUnkStaticData;
+use crate::set_unsafe::UnsafeInitUnkStaticData;
 use crate::err::StaticErr;
 
 
-use crate::RawStaticData;
+use crate::UnkStaticData;
 use std::cell::UnsafeCell;
 
 #[derive(Debug)]
@@ -18,7 +18,7 @@ impl AlwaysLockOnce {
 	}
 }
 
-impl<T> RawStaticData<T, AlwaysLockOnce> {
+impl<T> UnkStaticData<T, AlwaysLockOnce> {
 	#[inline]
 	pub const fn new(a: T) -> Self {
 		Self {
@@ -30,7 +30,7 @@ impl<T> RawStaticData<T, AlwaysLockOnce> {
 
 
 //UNSAFE
-impl<T> UnsafeInitRawStaticData<T> for RawStaticData<T, AlwaysLockOnce> {
+impl<T> UnsafeInitUnkStaticData<T> for UnkStaticData<T, AlwaysLockOnce> {
 	#[inline]
 	unsafe fn set_box(&self, v: Box<T>) -> Result<(), StaticErr<Box<T>>> {
 		Err(StaticErr::allow(v))
@@ -43,7 +43,7 @@ impl<T> UnsafeInitRawStaticData<T> for RawStaticData<T, AlwaysLockOnce> {
 }
 
 
-impl<T> SetInitRawStaticData<T> for RawStaticData<T, AlwaysLockOnce> {
+impl<T> SetInitUnkStaticData<T> for UnkStaticData<T, AlwaysLockOnce> {
 	#[inline]
 	fn set(&self, v: T) -> Result<(), StaticErr<T>> {
 		Err(StaticErr::allow(v))

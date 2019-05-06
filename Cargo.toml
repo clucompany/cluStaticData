@@ -1,6 +1,6 @@
 [package]
 name = "cluStaticData"
-version = "0.1.2"
+version = "0.1.4"
 authors = ["Denis Kotlyarov (Денис Котляров) <denis2005991@gmail.com>"]
 exclude = ["/.travis.yml"]
 repository = "https://github.com/clucompany/cluStaticData.git"
@@ -8,7 +8,7 @@ license = "Apache-2.0"
 readme = "README.md"
 edition = "2018"
 
-description = ""
+description = "Methods for describing and creating static values. Implemented static value constructors executed in real-time."
 keywords = ["once_static_data", "static_data", "cluStaticData", "clucompany"]
 categories = ["development-tools"]
 

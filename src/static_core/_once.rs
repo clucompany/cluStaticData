@@ -1,9 +1,9 @@
 
 use crate::err::StaticErr;
-use crate::r#unsafe::UnsafeInitRawStaticData;
-use crate::StaticTErr;
+use crate::r#unsafe::UnsafeInitUnkStaticData;
+use crate::StaticInitErr;
 use std::sync::ONCE_INIT;
-use crate::RawStaticData;
+use crate::UnkStaticData;
 use crate::static_core::StaticInit;
 use std::sync::Once;
 use std::cell::UnsafeCell;
@@ -21,7 +21,7 @@ impl StaticInit for Once {
 	}
 }
 
-impl<T> RawStaticData<T, Once> {
+impl<T> UnkStaticData<T, Once> {
 	#[inline]
 	pub const fn new(a: T) -> Self {
 		Self {
@@ -32,7 +32,7 @@ impl<T> RawStaticData<T, Once> {
 }
 
 
-impl<T> UnsafeInitRawStaticData<T> for RawStaticData<&'static T, Once> {
+impl<T> UnsafeInitUnkStaticData<T> for UnkStaticData<&'static T, Once> {
 	type Box_Ok = ();
 	type Box_Err = StaticErr<Box<T>>;
 	

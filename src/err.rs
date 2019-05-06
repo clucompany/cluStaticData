@@ -3,26 +3,45 @@ use std::ops::Deref;
 use std::ops::DerefMut;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub enum StaticTErr {
+pub enum StaticInitErr {
 	PrevLock,
 	AllowLock,
 	UnkState,
 }
 
-impl StaticTErr {
+impl StaticInitErr {
 	#[inline]
 	pub const fn prev() -> Self {
-		Self::PrevLock
+		StaticInitErr::PrevLock
 	}
 	
 	#[inline]
 	pub const fn allow() -> Self {
-		Self::AllowLock
+		StaticInitErr::AllowLock
 	}
 	
 	#[inline]
 	pub const fn unk() -> Self {
-		Self::UnkState
+		StaticInitErr::UnkState
+	}
+}
+
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub enum IgnoreInitErr {
+	PrevLock,
+	AllowLock,
+}
+
+impl IgnoreInitErr {
+	#[inline]
+	pub const fn prev() -> Self {
+		IgnoreInitErr::PrevLock
+	}
+	
+	#[inline]
+	pub const fn allow() -> Self {
+		IgnoreInitErr::AllowLock	
 	}
 }
 
@@ -31,7 +50,7 @@ impl StaticTErr {
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct StaticErr<T> {
 	data:		T,
-	r#type:	StaticTErr,
+	r#type:	StaticInitErr,
 }
 
 impl<T> From<T> for StaticErr<T> {
@@ -43,7 +62,7 @@ impl<T> From<T> for StaticErr<T> {
 
 impl<T> StaticErr<T> {
 	#[inline]
-	pub const fn new(arg: T, err: StaticTErr) -> Self {
+	pub const fn new(arg: T, err: StaticInitErr) -> Self {
 		Self {
 			data:		arg,
 			r#type:	err,
@@ -52,17 +71,17 @@ impl<T> StaticErr<T> {
 	
 	#[inline]
 	pub const fn prev(arg: T) -> Self {
-		Self::new(arg, StaticTErr::prev())
+		Self::new(arg, StaticInitErr::prev())
 	}
 	
 	#[inline]
 	pub const fn allow(arg: T) -> Self {
-		Self::new(arg, StaticTErr::allow())
+		Self::new(arg, StaticInitErr::allow())
 	}
 	
 	#[inline]
 	pub const fn unk(arg: T) -> Self {
-		Self::new(arg, StaticTErr::unk())
+		Self::new(arg, StaticInitErr::unk())
 	}
 	
 	#[inline]
@@ -71,12 +90,12 @@ impl<T> StaticErr<T> {
 	}
 	
 	#[inline]
-	pub fn into_type(self) -> StaticTErr {
+	pub fn into_type(self) -> StaticInitErr {
 		self.r#type
 	}
 	
 	#[inline(always)]
-	pub const fn as_type(&self) -> &StaticTErr {
+	pub const fn as_type(&self) -> &StaticInitErr {
 		&self.r#type
 	}
 	
@@ -87,15 +106,15 @@ impl<T> StaticErr<T> {
 }
 
 
-impl<T> From<(T, StaticTErr)> for StaticErr<T> {
+impl<T> From<(T, StaticInitErr)> for StaticErr<T> {
 	#[inline(always)]
-	fn from((v, t): (T, StaticTErr)) -> Self {
+	fn from((v, t): (T, StaticInitErr)) -> Self {
 		Self::new(v, t)
 	}
 }
 
 impl<T> Deref for StaticErr<T> {
-	type Target = StaticTErr;
+	type Target = StaticInitErr;
 	
 	#[inline(always)]
 	fn deref(&self) -> &Self::Target {

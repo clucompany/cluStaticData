@@ -1,7 +1,8 @@
 
+use crate::err::IgnoreInitErr;
 use crate::err::StaticErr;
 
-pub trait SetInitRawStaticData<T> {
+pub trait SetInitUnkStaticData<T> {
 	fn set(&self, v: T) -> Result<(), StaticErr<T>>;
 	fn replace(&self, v: T) -> Result<T, StaticErr<T>>;
 	
@@ -23,21 +24,3 @@ pub trait SetInitRawStaticData<T> {
 	}
 }
 
-
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub enum IgnoreInitErr {
-	PrevLock,
-	AllowLock,
-}
-
-impl IgnoreInitErr {
-	#[inline]
-	pub const fn prev() -> Self {
-		Self::PrevLock
-	}
-	
-	#[inline]
-	pub const fn allow() -> Self {
-		Self::AllowLock	
-	}
-}

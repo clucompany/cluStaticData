@@ -1,11 +1,11 @@
 
-use crate::set::IgnoreInitErr;
-use crate::set::SetInitRawStaticData;
-use crate::set_unsafe::UnsafeInitRawStaticData;
+use crate::err::IgnoreInitErr;
+use crate::set::SetInitUnkStaticData;
+use crate::set_unsafe::UnsafeInitUnkStaticData;
 
 use crate::err::StaticErr;
 
-use crate::RawStaticData;
+use crate::UnkStaticData;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::cell::UnsafeCell;
@@ -22,7 +22,7 @@ const INITIALIZED: usize = 2;
 //инициализирован
 
 
-impl<T> RawStaticData<T, AtomicUsize> {
+impl<T> UnkStaticData<T, AtomicUsize> {
 	#[inline]
 	pub const fn new(a: T) -> Self {
 		Self {
@@ -46,7 +46,7 @@ impl<T> RawStaticData<T, AtomicUsize> {
 				while self.sync_data.load(Ordering::SeqCst) == INITIALIZING {}
 				b(v)
 			},
-			a => {
+			_ => {
 				b(v)
 			},/*Err(SetLoggerError(()))*/
 			//инициализируется
@@ -90,7 +90,7 @@ impl<T> RawStaticData<T, AtomicUsize> {
 }
 
 
-impl<T> UnsafeInitRawStaticData<T> for RawStaticData<&'static T, AtomicUsize> where T: 'static {
+impl<T> UnsafeInitUnkStaticData<T> for UnkStaticData<&'static T, AtomicUsize> where T: 'static {
 	unsafe fn set_box(&self, v: Box<T>) -> Result<(), StaticErr<Box<T>>> {
 		self.lock_logic(v, |v| {
 			#[allow(unused_unsafe)]
@@ -114,7 +114,7 @@ impl<T> UnsafeInitRawStaticData<T> for RawStaticData<&'static T, AtomicUsize> wh
 	}
 }
 
-impl<T> SetInitRawStaticData<T> for RawStaticData<T, AtomicUsize> {
+impl<T> SetInitUnkStaticData<T> for UnkStaticData<T, AtomicUsize> {
 	fn set(&self, v: T) -> Result<(), StaticErr<T>> {
 		self.lock_logic(v, 
 			|v| { unsafe { *self.data.get() = v; } Ok( () )},
