@@ -1,7 +1,7 @@
 
 #[macro_use]
-extern crate cluOnceStatic;
-use cluOnceStatic::err::StaticErr;
+extern crate cluStaticData;
+use cluStaticData::err::StaticErr;
 
 static_data! {
 	pub(crate) static ref TEST: TestValue = TestValue::Unk;

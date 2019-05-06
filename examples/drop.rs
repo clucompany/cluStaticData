@@ -1,8 +1,8 @@
 
 #[macro_use]
-extern crate cluOnceStatic;
+extern crate cluStaticData;
 
-use cluOnceStatic::err::StaticErr;
+use cluStaticData::err::StaticErr;
 
 static_data! {
 	pub(crate) static ref DROPPER: MyDrop = MyDrop(0);

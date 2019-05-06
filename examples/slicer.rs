@@ -1,10 +1,10 @@
 
 #[macro_use]
-extern crate cluOnceStatic;
+extern crate cluStaticData;
 
-use cluOnceStatic::StaticData;
+use cluStaticData::StaticData;
 use std::fmt::Debug;
-use cluOnceStatic::err::StaticErr;
+use cluStaticData::err::StaticErr;
 
 
 static_data! {

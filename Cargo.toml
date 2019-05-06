@@ -3,13 +3,13 @@ name = "cluStaticData"
 version = "0.1.2"
 authors = ["Denis Kotlyarov (Денис Котляров) <denis2005991@gmail.com>"]
 exclude = ["/.travis.yml"]
-repository = "https://github.com/clucompany/cluOnceStatic.git"
+repository = "https://github.com/clucompany/cluStaticData.git"
 license = "Apache-2.0"
 readme = "README.md"
 edition = "2018"
 
 description = ""
-keywords = ["once_static_data", "static_data", "cluOnceStatic", "clucompany"]
+keywords = ["once_static_data", "static_data", "cluStaticData", "clucompany"]
 categories = ["development-tools"]
 
 [dependencies]

@@ -2,7 +2,7 @@
 use std::fmt::Debug;
 
 #[macro_use]
-extern crate cluOnceStatic;
+extern crate cluStaticData;
 
 static_data! {
 	pub(crate) static ref TEST: &'static dyn MyTrait = &();
