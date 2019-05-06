@@ -1,10 +1,8 @@
 
 use crate::err::IgnoreInitErr;
-use crate::set::SetInitUnkStaticData;
-use crate::set_unsafe::UnsafeInitUnkStaticData;
+use crate::SetInitUnkStaticData;
+use crate::UnsafeInitUnkStaticData;
 use crate::err::StaticErr;
-
-
 use crate::UnkStaticData;
 use std::cell::UnsafeCell;
 

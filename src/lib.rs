@@ -106,29 +106,16 @@ Licensed under the Apache License, Version 2.0
 
 use crate::err::IgnoreInitErr;
 use crate::err::StaticErr;
-use crate::set_unsafe::UnsafeInitUnkStaticData;
-use crate::set::SetInitUnkStaticData;
-
-
-
 use std::sync::atomic::AtomicUsize;
 use crate::static_core::AlwaysLockOnce;
 use std::fmt::Display;
 use std::fmt::Debug;
 use std::cell::UnsafeCell;
-
 use std::ops::Deref;
-
-
 use std::fmt;
 
 pub mod err;
 pub (crate) mod static_core;
-
-mod set;
-mod set_unsafe;
-pub use self::set::*;
-pub use self::set_unsafe::*;
 
 
 #[macro_export]
@@ -260,5 +247,34 @@ impl<T, I> Display for UnkStaticData<T, I> where T: Display, Self: Deref<Target 
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		(**self).fmt(f)
 	}
+}
+
+
+
+pub trait SetInitUnkStaticData<T> {
+	fn set(&self, v: T) -> Result<(), StaticErr<T>>;
+	fn replace(&self, v: T) -> Result<T, StaticErr<T>>;
+	
+	unsafe fn unsafe_replace(&self, v: T) -> T;
+	
+	fn get<'a>(&'a self) -> &'a T;
+	
+	
+	
+	fn ignore_init(&self) -> Result<(), IgnoreInitErr>;
+	fn ignore_init_dont_result(&self);
+
+	
+	fn is_init_state(&self) -> bool;
+	
+	#[inline]
+	fn is_noinit_state(&self) -> bool {
+		!self.is_init_state()
+	}
+}
+
+pub trait UnsafeInitUnkStaticData<T> {
+	unsafe fn set_box(&self, v: Box<T>) -> Result<(), StaticErr<Box<T>>>;
+	unsafe fn set_raw(&self, v: T) -> Result<(), StaticErr<T>>;
 }
 
