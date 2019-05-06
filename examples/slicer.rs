@@ -1,11 +1,10 @@
 
-use cluOnceStatic::StaticTErr;
-use cluOnceStatic::StaticData;
-use std::fmt::Debug;
-
 #[macro_use]
 extern crate cluOnceStatic;
 
+use cluOnceStatic::StaticData;
+use std::fmt::Debug;
+use cluOnceStatic::err::StaticErr;
 
 
 static_data! {
@@ -24,20 +23,20 @@ impl MyTrait for usize {
 	
 }
 
-fn main() -> Result<(), StaticTErr> {
+fn main() -> Result<(), StaticErr<&'static (dyn MyTrait + 'static)>> {
 	let bb: &MyTrait = *TEST;
 	
-	let cc: &StaticData<&'static (dyn MyTrait + 'static)> = &TEST;
+	let _cc: &StaticData<&'static (dyn MyTrait + 'static)> = &TEST;
 	
-	TEST.set_once(&10)?;
+	let result = TEST.set(&10)?;
 	
 	//println!("{:?}", aa);
 	println!("{:?}", bb);
 	println!("{:?}", TEST);
+	println!("{:?}", result);
 	
-	TEST.set_once(&20)?;
-	
-	println!("{:?}", cc);
+	let result = TEST.set(&20);
+	println!("{:?}", result);
 	
 	Ok( () )
 }

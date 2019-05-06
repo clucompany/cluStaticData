@@ -3,22 +3,36 @@
 #![feature(once_is_completed)]
 #![feature(const_fn)]
 #![feature(const_raw_ptr_deref)]
+#![feature(associated_type_defaults)]
+#![feature(specialization)]
+#![feature(type_alias_enum_variants)]
 
+use crate::set::IgnoreInitErr;
+use crate::err::StaticErr;
+use crate::set_unsafe::UnsafeInitRawStaticData;
+use crate::set::SetInitRawStaticData;
+
+
+
+use std::sync::atomic::AtomicUsize;
 use crate::static_core::AlwaysLockOnce;
 use std::fmt::Display;
 use std::fmt::Debug;
 use std::cell::UnsafeCell;
-use std::ops::DerefMut;
+
 use std::ops::Deref;
-use std::sync::Once;
-use std::sync::ONCE_INIT;
+
+
 use std::fmt;
 
 pub (crate) mod static_core;
+pub mod set;
+pub mod set_unsafe;
+pub mod err;
 
 #[macro_export]
 macro_rules! static_data {
-	
+	//static data
 	[
 		$(#[$($mt:tt)*])*
 		static ref $name:ident: $t: ty = $a:expr;	$($tt:tt)*
@@ -47,34 +61,82 @@ macro_rules! static_data {
 	() => ()
 }
 
-pub type StaticData<T>			= RawStaticData<T, Once>;
+pub type StaticData<T>		= RawStaticData<T, AtomicUsize>;
 pub type StaticDataAlwaysLock<T>	= RawStaticData<T, AlwaysLockOnce>;
 
-pub struct RawStaticData<T, Once> where Once: StaticOnce {
-	value: UnsafeCell<T>,
-	once: Once,
+pub struct RawStaticData<T, I> {
+	data: UnsafeCell<T>,
+	sync_data: I,
 }
 
-unsafe impl<T, O> Sync for RawStaticData<T, O> where T: Sync, O: StaticOnce {}
-unsafe impl<T, O> Send for RawStaticData<T, O> where T: Sync + Send, O: StaticOnce {}
+unsafe impl<T, I> Sync for RawStaticData<T, I> where T: Sync {}
+unsafe impl<T, I> Send for RawStaticData<T, I> where T: Sync + Send {}
 
-impl<T> RawStaticData<T, Once> {
-	#[inline]
-	pub const fn new(a: T) -> Self {
-		//static INIT: Once = ONCE_INIT;
-		Self {
-			value: UnsafeCell::new(a),
-			once: ONCE_INIT,
-		}
+//DONT TRAIT!
+impl<T, I> RawStaticData<T, I> where Self: UnsafeInitRawStaticData<T> {
+	#[inline(always)]
+	pub unsafe fn set_box(&self, v: Box<T>) -> Result<(), StaticErr<Box<T>>> {
+		UnsafeInitRawStaticData::set_box(self, v)
+	}
+	
+	#[inline(always)]
+	pub unsafe fn set_raw(&self, v: T) -> Result<(), StaticErr<T>> {
+		UnsafeInitRawStaticData::set_raw(self, v)
 	}
 }
 
 
-impl<'a, T, O> RawStaticData<&'a T, O> where O: StaticOnce, T: 'static {
-	pub unsafe fn box_set_once(&self, v: Box<T>) -> Result<(), StaticTErr> {
-		let mut err = Err(StaticTErr::PrevLock);
+
+
+impl<T, I> RawStaticData<T, I> where Self: SetInitRawStaticData<T> {
+	#[inline(always)]
+	pub fn set(&self, v: T) -> Result<(), StaticErr<T>> {
+		SetInitRawStaticData::set(self, v)
+	}
+	
+	#[inline(always)]
+	pub fn replace(&self, v: T) -> Result<T, StaticErr<T>> {
+		SetInitRawStaticData::replace(self, v)
+	}
+	
+	#[inline(always)]
+	pub unsafe fn unsafe_replace(&self, v: T) -> T {
+		SetInitRawStaticData::unsafe_replace(self, v)
+	}
+	
+	#[inline(always)]
+	pub fn get<'a>(&'a self) -> &'a T {
+		SetInitRawStaticData::get(self)
+	}
+	
+	#[inline(always)]
+	pub fn ignore_init(&self) -> Result<(), IgnoreInitErr> {
+		SetInitRawStaticData::ignore_init(self)	
+	}
+	
+	#[inline(always)]
+	pub fn ignore_init_dont_result(&self) {
+		SetInitRawStaticData::ignore_init_dont_result(self)
+	}
+	
+	#[inline(always)]
+	pub fn is_init_state(&self) -> bool {
+		SetInitRawStaticData::is_init_state(self)	
+	}
+	
+	#[inline(always)]
+	pub fn is_noinit_state(&self) -> bool {
+		SetInitRawStaticData::is_noinit_state(self)
+	}
+}
+
+
+/*
+impl<T, O> RawStaticData<&'static T, O> where O: StaticInit, T: 'static {
+	pub unsafe fn set_box(&self, v: Box<T>) -> Result<(), StaticTErr> {
+		let mut err = Err(StaticTErr::prev());
 				
-		self.once.raw_lock_once(|| {
+		self.init.raw_lock(|| {
 			#[allow(unused_unsafe)]
 			unsafe {
 				*self.value.get() = &*Box::into_raw(v);
@@ -83,10 +145,11 @@ impl<'a, T, O> RawStaticData<&'a T, O> where O: StaticOnce, T: 'static {
 		});
 		err
 	}
-	pub unsafe fn set_raw_once(&self, v: T) -> Result<(), StaticTErr> {
-		let mut err = Err(StaticTErr::PrevLock);
+	
+	pub unsafe fn set_raw(&self, v: T) -> Result<(), StaticTErr> {
+		let mut err = Err(StaticTErr::prev());
 				
-		self.once.raw_lock_once(|| {
+		self.init.raw_lock(|| {
 			#[allow(unused_unsafe)]
 			unsafe {
 				let v = Box::new(v);
@@ -99,11 +162,42 @@ impl<'a, T, O> RawStaticData<&'a T, O> where O: StaticOnce, T: 'static {
 }
 
 
-impl<T, O> RawStaticData<T, O> where O: StaticOnce {
-	pub fn set_once(&self, v: T) -> Result<(), StaticTErr> {
-		let mut err = Err(StaticTErr::PrevLock);
+
+impl<T, O> RawStaticData<T, O> where O: StaticInit, T: Copy {
+	pub fn set_copy(&self, v: T) -> Result<(), StaticErr<T>> where T: Copy {
+		let mut is_err = true;
 				
-		self.once.raw_lock_once(|| {
+		self.init.raw_lock(|| {
+			unsafe {
+				*self.value.get() = v;
+			}
+			is_err = false;
+		});
+		match is_err {
+			false => Ok(()),
+			_ => Err( StaticErr::new(v, StaticTErr::prev()) )
+		}	
+	}
+	
+	pub fn replace_copy(&self, v: T) -> Result<T, StaticErr<T>> where T: Copy {
+		let mut result: Option<T> = None;
+				
+		self.init.raw_lock(|| {
+			result = Some(std::mem::replace(unsafe { &mut *self.value.get() }, v));
+		});
+		
+		match result {
+			Some(a) => Ok(a),
+			None => Err( StaticErr::new(v, StaticTErr::prev()) )
+		}
+	}
+}
+
+impl<T, O> RawStaticData<T, O> where O: StaticInit {
+	pub fn set(&self, v: T) -> Result<(), StaticTErr> {
+		let mut err = Err(StaticTErr::prev());
+				
+		self.init.raw_lock(|| {
 			unsafe {
 				*self.value.get() = v;
 			}
@@ -112,77 +206,47 @@ impl<T, O> RawStaticData<T, O> where O: StaticOnce {
 		err	
 	}
 	
-	pub fn set_once_copy(&self, v: T) -> Result<(), StaticErr<T>> where T: Copy {
-		let mut is_err = true;
-				
-		self.once.raw_lock_once(|| {
-			unsafe {
-				*self.value.get() = v;
-			}
-			is_err = false;
-		});
-		match is_err {
-			false => Ok(()),
-			_ => Err( StaticErr::new(v, StaticTErr::PrevLock) )
-		}	
-	}
 	
-	pub fn replace_once(&self, v: T) -> Option<T> {
+	
+	pub fn replace(&self, v: T) -> Option<T> {
 		let mut result: Option<T> = None;
 				
-		self.once.raw_lock_once(|| {
+		self.init.raw_lock(|| {
 			result = Some(std::mem::replace(unsafe { &mut *self.value.get() }, v));
 		});
 		
 		result
 	}
 	
-	pub fn replace_once_copy(&self, v: T) -> Result<T, StaticErr<T>> where T: Copy {
-		let mut result: Option<T> = None;
-				
-		self.once.raw_lock_once(|| {
-			result = Some(std::mem::replace(unsafe { &mut *self.value.get() }, v));
-		});
-		
-		match result {
-			Some(a) => Ok(a),
-			None => Err( StaticErr::new(v, StaticTErr::PrevLock) )
-		}
-	}
-	
-	
-	
-	
-	pub unsafe fn replace(&self, v: T) -> T {
-		self.ignore_init_once();
+	pub unsafe fn unsafe_replace(&self, v: T) -> T {
+		self.ignore_init();
 		
 		#[allow(unused_unsafe)]
 		std::mem::replace(unsafe { &mut *self.value.get() }, v)	
 	}
 	
-	
-	pub const fn get<'a>(&'a self) -> &'a T {
+	pub const fn raw_get<'a>(&'a self) -> &'a T {
 		unsafe{ &*self.value.get() }	
 	}
 	
-	pub fn get_once<'a>(&'a self) -> &'a T {
-		self.ignore_init_once();
-		self.get()
+	pub fn get<'a>(&'a self) -> &'a T {
+		self.ignore_init();
+		self.raw_get()
 	}
 	
 	#[inline(always)]
 	pub fn is_init_state(&self) -> bool {
-		self.once.is_init_state()
+		self.init.is_init_state()
 	}
 	
 	#[inline(always)]
-	pub fn ignore_init_once(&self) -> bool {
-		self.once.ignore_init_once()
+	pub fn ignore_init(&self) -> bool {
+		self.init.ignore_init()
 	}
 	
 	#[inline(always)]
-	pub fn raw_ignore_init_once(&self) {
-		self.once.raw_ignore_init_once()
+	pub fn raw_ignore_init(&self) {
+		self.init.raw_ignore_init()
 	}
 	
 	
@@ -191,24 +255,24 @@ impl<T, O> RawStaticData<T, O> where O: StaticOnce {
 		!self.is_init_state()
 	}
 }
+*/
 
 
-
-/*impl<T, O> From<T> for RawStaticData<T, O> where O: StaticOnce {
+/*impl<T, O> From<T> for RawStaticData<T, O> where O: StaticInit {
 	#[inline(always)]
 	fn from(a: T) -> Self {
 		Self::new(a)
 	}
 }*/
 
-impl<T, O> AsRef<T> for RawStaticData<T, O> where O: StaticOnce {
+impl<T, I> AsRef<T> for RawStaticData<T, I> where Self: SetInitRawStaticData<T> {
 	#[inline(always)]
 	fn as_ref(&self) -> &T {
 		self.get()
 	}
 }
 
-impl<T, O> Deref for RawStaticData<T, O> where O: StaticOnce {
+impl<T, I> Deref for RawStaticData<T, I> where Self: SetInitRawStaticData<T> {
 	type Target = T;
 	
 	#[inline(always)]
@@ -217,14 +281,14 @@ impl<T, O> Deref for RawStaticData<T, O> where O: StaticOnce {
 	}
 }
 
-impl<T, O> Debug for RawStaticData<T, O> where T: Debug, O: StaticOnce {
+impl<T, I> Debug for RawStaticData<T, I> where T: Debug, Self: Deref<Target = T> {
 	#[inline(always)]
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		(**self).fmt(f)
 	}
 }
 
-impl<T, O> Display for RawStaticData<T, O> where T: Display, O: StaticOnce {
+impl<T, I> Display for RawStaticData<T, I> where T: Display, Self: Deref<Target = T> {
 	#[inline(always)]
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		(**self).fmt(f)
@@ -232,79 +296,12 @@ impl<T, O> Display for RawStaticData<T, O> where T: Display, O: StaticOnce {
 }
 
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum StaticTErr {
-	PrevLock,
-}
-
-impl Default for StaticTErr {
-	#[inline]
-	fn default() -> Self {
-		StaticTErr::PrevLock
-	}
-}
-
-#[derive(Debug)]
-pub struct StaticErr<T> {
-	data:	T,
-	r#type:	StaticTErr,
-}
-
-
-impl<T> StaticErr<T> {
-	#[inline]
-	pub const fn new(arg: T, err: StaticTErr) -> Self {
-		Self {
-			data:	arg,
-			r#type:	err,
-		}
-	}
-	
-	#[inline]
-	pub fn into_inner(self) -> T {
-		self.data
-	}
-	
-	#[inline(always)]
-	pub const fn as_type(&self) -> &StaticTErr {
-		&self.r#type
-	}
-	
-	#[inline(always)]
-	pub const fn as_inner(&self) -> &T {
-		&self.data
-	}
-}
-
-
-impl<T> From<(T, StaticTErr)> for StaticErr<T> {
-	#[inline(always)]
-	fn from((v, t): (T, StaticTErr)) -> Self {
-		Self::new(v, t)
-	}
-}
-
-impl<T> Deref for StaticErr<T> {
-	type Target = StaticTErr;
-	
-	#[inline(always)]
-	fn deref(&self) -> &Self::Target {
-		&self.r#type
-	}
-}
-
-impl<T> DerefMut for StaticErr<T> {	
-	#[inline(always)]
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.r#type
-	}
-}
 
 
 /*
 pub const fn set_slice<S, v>(value: &'static S) -> bool where S: StaticValue<V = v> + 'static {
 	let mut is_set = false;
-	value.INIT.call_once(|| {
+	value.INIT.call(|| {
 		unsafe {
 			LOGGER = log;
 		}
@@ -315,7 +312,7 @@ pub const fn set_slice<S, v>(value: &'static S) -> bool where S: StaticValue<V =
 
 pub const fn set<S, v>(log: S) -> bool where S: StaticValue<V = v> + 'static {
 	let mut is_set = false;
-	LOGGER_INIT.call_once(move || {
+	LOGGER_INIT.call(move || {
 		unsafe {
 			let log = Box::new(log);
 			LOGGER = &*Box::into_raw(log);
@@ -328,7 +325,7 @@ pub const fn set<S, v>(log: S) -> bool where S: StaticValue<V = v> + 'static {
 
 pub const fn set_boxed<S, v>(log: Box<S>) -> bool where S: StaticValue<V = v> + 'static {
 	let mut is_set = false;
-	LOGGER_INIT.call_once(|| {
+	LOGGER_INIT.call(|| {
 		unsafe {
 			LOGGER = &*Box::into_raw(log);
 		}
@@ -341,70 +338,3 @@ pub const fn set_boxed<S, v>(log: Box<S>) -> bool where S: StaticValue<V = v> + 
 
 
 
-
-pub trait StaticOnce {
-	fn raw_lock_once<F: FnOnce()>(&self, f: F);
-	
-
-	#[inline]
-	fn ignore_init_once(&self) -> bool {
-		let mut is_init = false;
-		self.raw_lock_once(|| {
-			is_init = true;
-		});
-		
-		is_init
-	}
-	
-	#[inline]
-	fn raw_ignore_init_once(&self) {
-		self.raw_lock_once(|| {});
-	}
-	
-	fn is_init_state(&self) -> bool;
-}
-
-
-impl<'a, 'c, A> StaticOnce for &'a A where A: StaticOnce + 'c {
-	#[inline(always)]
-	fn raw_lock_once<F: FnOnce()>(&self, f: F) {
-		A::raw_lock_once(self, f)
-	}
-
-	#[inline(always)]
-	fn ignore_init_once(&self) -> bool {
-		A::ignore_init_once(self)
-	}
-	
-	#[inline(always)]
-	fn raw_ignore_init_once(&self) {
-		A::raw_ignore_init_once(self)
-	}
-	
-	#[inline(always)]
-	fn is_init_state(&self) -> bool {
-		A::is_init_state(self)
-	}
-}
-
-impl<'a, A> StaticOnce for Box<A> where A: StaticOnce + 'a {
-	#[inline(always)]
-	fn raw_lock_once<F: FnOnce()>(&self, f: F) {
-		A::raw_lock_once(self, f)
-	}
-
-	#[inline(always)]
-	fn ignore_init_once(&self) -> bool {
-		A::ignore_init_once(self)
-	}
-	
-	#[inline(always)]
-	fn raw_ignore_init_once(&self) {
-		A::raw_ignore_init_once(self)
-	}
-	
-	#[inline(always)]
-	fn is_init_state(&self) -> bool {
-		A::is_init_state(self)
-	}
-}

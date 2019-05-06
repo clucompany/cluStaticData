@@ -2,7 +2,7 @@
 #[macro_use]
 extern crate cluOnceStatic;
 
-use cluOnceStatic::StaticTErr;
+use cluOnceStatic::err::StaticErr;
 
 static_data! {
 	pub(crate) static ref DROPPER: MyDrop = MyDrop(0);
@@ -17,14 +17,14 @@ impl Drop for MyDrop {
 	}
 }
 
-fn main() -> Result<(), StaticTErr> {
-	DROPPER.set_once(MyDrop(1))?;
+fn main() -> Result<(), StaticErr<MyDrop>> {
+	DROPPER.set(MyDrop(1))?;
 	println!("this_value {:?} #0", DROPPER);
 	
-	DROPPER.set_once(MyDrop(2))?;
+	DROPPER.set(MyDrop(2))?;
 	println!("this_value {:?} #1", DROPPER);
 	
-	DROPPER.set_once(MyDrop(3))?;
+	DROPPER.set(MyDrop(3))?;
 	println!("this_value {:?} #2", DROPPER);
 	
 	Ok( () )

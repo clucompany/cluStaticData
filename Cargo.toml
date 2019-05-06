@@ -1,6 +1,6 @@
 [package]
-name = "cluOnceStatic"
-version = "0.1.1"
+name = "cluStaticData"
+version = "0.1.2"
 authors = ["Denis Kotlyarov (Денис Котляров) <denis2005991@gmail.com>"]
 exclude = ["/.travis.yml"]
 repository = "https://github.com/clucompany/cluOnceStatic.git"

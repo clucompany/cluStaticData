@@ -1,4 +1,4 @@
-use cluOnceStatic::StaticTErr;
+
 use std::fmt::Debug;
 
 #[macro_use]
@@ -25,13 +25,11 @@ impl MyTrait for usize {
 	}
 }
 
-fn main() -> Result<(), StaticTErr> {
-	println!("{:?}", TEST);
+fn main() {
+	println!("#0 {:?}", TEST);
 	assert_eq!(TEST.is_true(), false);
 	
-	TEST.set_once(&10)?;
-	println!("{:?}", TEST);
+	let err = TEST.set(&10);
+	println!("#1 {:?}, result: {:?}", TEST, err);
 	assert_eq!(TEST.is_true(), true);
-	
-	Ok( () )
 }
