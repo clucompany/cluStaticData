@@ -48,7 +48,7 @@ impl<T> UnkStaticData<T, AtomicUsize> {
 			},
 			_ => {
 				b(v)
-			},/*Err(SetLoggerError(()))*/
+			},
 			//инициализируется
 		}
 	}
@@ -68,7 +68,7 @@ impl<T> UnkStaticData<T, AtomicUsize> {
 				while self.sync_data.load(Ordering::SeqCst) == INITIALIZING {}
 				b()
 			},
-			_ => b(),/*Err(SetLoggerError(()))*/
+			_ => b(),
 			//инициализируется
 		}
 	}
