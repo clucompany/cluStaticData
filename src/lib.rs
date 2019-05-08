@@ -22,52 +22,56 @@ Methods for describing and creating static values. Implemented static value cons
 # Use (static trait data)
 
 ```
-use std::fmt::Debug;
-
 #[macro_use]
 extern crate cluStaticData;
 
+use std::fmt::Debug;
+use cluStaticData::err::StaticErr;
+
+
 static_data! {
-	pub(crate) static ref TEST: &'static dyn MyTrait = &();
+	static ref TEST: &'static (dyn MyTrait + 'static) = &();
 }
 
 pub trait MyTrait: Debug + Sync {
-	fn is_true(&self) -> bool {
-		false
-	}
+	fn data(&self) -> usize;
 }
 
 impl MyTrait for () {
-	
+	#[inline]
+	fn data(&self) -> usize {
+		0
+	}
 }
 
 impl MyTrait for usize {
 	#[inline]
-	fn is_true(&self) -> bool {
-		self > &0
+	fn data(&self) -> usize {
+		*self
 	}
 }
 
-fn main() {
-	println!("#0 {:?}", TEST);
-	assert_eq!(TEST.is_true(), false);
+fn main() -> Result<(), StaticErr<&'static (dyn MyTrait + 'static)>> {
+	let _result = TEST.set(&10)?;
+	println!("OK {:?}, data: {:?}", TEST, TEST.data());
 	
-	let err = TEST.set(&10);
-	println!("#1 {:?}, result: {:?}", TEST, err);
-	assert_eq!(TEST.is_true(), true);
+	let err = TEST.set(&20);
+	assert_eq!(err.err().unwrap().into_inner().data(), 20);
+	println!("OK {:?}, data: {:?}", TEST, TEST.data());
+	
+	Ok( () )
 }
 ```
 
 # Use (static data, unk type)
 
 ```
-
 #[macro_use]
 extern crate cluStaticData;
 use cluStaticData::err::StaticErr;
 
 static_data! {
-	pub (crate) static ref TEST: TestValue = TestValue::Unk;
+	pub(crate) static ref TEST: TestValue = TestValue::Unk;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -77,21 +81,21 @@ pub enum TestValue {
 }
 
 fn main() {
-	println!("#1 {:?}", TEST);
 	assert_eq!(*TEST, TestValue::Unk);
+	println!("OK #1 {:?}", TEST);
 	
 	let result = TEST.set(TestValue::RuntimeValue(10));
 	assert_eq!(result.is_ok(), true);
-	println!("#2 {:?}", TEST);
+	println!("OK #2 {:?}", TEST);
 	
 	let result = TEST.set(TestValue::RuntimeValue(20));
 	assert_eq!(result.is_ok(), false);
 	assert_eq!(*TEST, TestValue::RuntimeValue(10));
-	println!("#3 {:?}", TEST);
+	println!("OK #3 {:?}", TEST);
 	
 	let result = TEST.replace(TestValue::Unk);
 	assert_eq!(result, Err(StaticErr::prev(TestValue::Unk)));
-	println!("#4 {:?}", result);
+	println!("OK #4 {:?}", result);
 }
 ```
 
@@ -175,13 +179,13 @@ impl<T, I> UnkStaticData<T, I> where Self: GenericStaticData<T> {
 	}
 	
 	#[inline(always)]
-	pub fn ignore_init(&self) -> Result<(), IgnoreInitErr> {
-		GenericStaticData::ignore_init(self)	
+	pub fn ignore_initialize(&self) -> Result<(), IgnoreInitErr> {
+		GenericStaticData::ignore_initialize(self)	
 	}
 	
 	#[inline(always)]
-	pub fn ignore_init_dont_result(&self) {
-		GenericStaticData::ignore_init_dont_result(self)
+	pub fn ignore_initialize_dont_result(&self) {
+		GenericStaticData::ignore_initialize_dont_result(self)
 	}
 	
 	#[inline(always)]
@@ -212,17 +216,17 @@ impl<T, I> Deref for UnkStaticData<T, I> where Self: GenericStaticData<T> {
 	}
 }
 
-impl<T, I> Debug for UnkStaticData<T, I> where T: Debug, Self: Deref<Target = T> {
+impl<T, I> Debug for UnkStaticData<T, I> where T: Debug, Self: GenericStaticData<T> {
 	#[inline(always)]
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		(**self).fmt(f)
+		self.get().fmt(f)
 	}
 }
 
-impl<T, I> Display for UnkStaticData<T, I> where T: Display, Self: Deref<Target = T> {
+impl<T, I> Display for UnkStaticData<T, I> where T: Display, Self: GenericStaticData<T> {
 	#[inline(always)]
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		(**self).fmt(f)
+		self.get().fmt(f)
 	}
 }
 
@@ -237,8 +241,8 @@ pub trait GenericStaticData<T> {
 	fn get<'a>(&'a self) -> &'a T;
 	
 	
-	fn ignore_init(&self) -> Result<(), IgnoreInitErr>;
-	fn ignore_init_dont_result(&self);
+	fn ignore_initialize(&self) -> Result<(), IgnoreInitErr>;
+	fn ignore_initialize_dont_result(&self);
 
 	
 	fn is_init_state(&self) -> bool;

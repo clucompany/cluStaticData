@@ -9,39 +9,44 @@ Methods for describing and creating static values. Implemented static value cons
 # Use (static trait data)
 
 ```
-use std::fmt::Debug;
-
 #[macro_use]
 extern crate cluStaticData;
 
+use std::fmt::Debug;
+use cluStaticData::err::StaticErr;
+
+
 static_data! {
-	pub(crate) static ref TEST: &'static dyn MyTrait = &();
+	static ref TEST: &'static (dyn MyTrait + 'static) = &();
 }
 
 pub trait MyTrait: Debug + Sync {
-	fn is_true(&self) -> bool {
-		false
-	}
+	fn data(&self) -> usize;
 }
 
 impl MyTrait for () {
-	
+	#[inline]
+	fn data(&self) -> usize {
+		0
+	}
 }
 
 impl MyTrait for usize {
 	#[inline]
-	fn is_true(&self) -> bool {
-		self > &0
+	fn data(&self) -> usize {
+		*self
 	}
 }
 
-fn main() {
-	println!("#0 {:?}", TEST);
-	assert_eq!(TEST.is_true(), false);
+fn main() -> Result<(), StaticErr<&'static (dyn MyTrait + 'static)>> {
+	let _result = TEST.set(&10)?;
+	println!("OK {:?}, data: {:?}", TEST, TEST.data());
 	
-	let err = TEST.set(&10);
-	println!("#1 {:?}, result: {:?}", TEST, err);
-	assert_eq!(TEST.is_true(), true);
+	let err = TEST.set(&20);
+	assert_eq!(err.err().unwrap().into_inner().data(), 20);
+	println!("OK {:?}, data: {:?}", TEST, TEST.data());
+	
+	Ok( () )
 }
 ```
 
@@ -53,7 +58,7 @@ extern crate cluStaticData;
 use cluStaticData::err::StaticErr;
 
 static_data! {
-	pub (crate) static ref TEST: TestValue = TestValue::Unk;
+	pub(crate) static ref TEST: TestValue = TestValue::Unk;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -63,21 +68,21 @@ pub enum TestValue {
 }
 
 fn main() {
-	println!("#1 {:?}", TEST);
 	assert_eq!(*TEST, TestValue::Unk);
+	println!("OK #1 {:?}", TEST);
 	
 	let result = TEST.set(TestValue::RuntimeValue(10));
 	assert_eq!(result.is_ok(), true);
-	println!("#2 {:?}", TEST);
+	println!("OK #2 {:?}", TEST);
 	
 	let result = TEST.set(TestValue::RuntimeValue(20));
 	assert_eq!(result.is_ok(), false);
 	assert_eq!(*TEST, TestValue::RuntimeValue(10));
-	println!("#3 {:?}", TEST);
+	println!("OK #3 {:?}", TEST);
 	
 	let result = TEST.replace(TestValue::Unk);
 	assert_eq!(result, Err(StaticErr::prev(TestValue::Unk)));
-	println!("#4 {:?}", result);
+	println!("OK #4 {:?}", result);
 }
 ```
 

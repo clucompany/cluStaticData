@@ -62,12 +62,12 @@ impl<T> GenericStaticData<T> for UnkStaticData<T, AlwaysLockOnce> {
 	}
 	
 	#[inline]
-	fn ignore_init(&self) -> Result<(), IgnoreInitErr> {
+	fn ignore_initialize(&self) -> Result<(), IgnoreInitErr> {
 		Ok( () )
 	}
 	
 	#[inline]
-	fn ignore_init_dont_result(&self) {
+	fn ignore_initialize_dont_result(&self) {
 		
 	}
 

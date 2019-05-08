@@ -50,7 +50,7 @@ impl<T> UnkStaticData<T, AtomicU8> {
 	}
 	
 	#[inline]
-	fn ignore_init_logic<B: AtomicGenErr<(), R>, A: FnOnce() -> R, R>(&self, a: A) -> R {
+	fn ignore_initialize_logic<B: AtomicGenErr<(), R>, A: FnOnce() -> R, R>(&self, a: A) -> R {
 		match self.sync_data.compare_and_swap(UNINITIALIZED, INITIALIZING, Ordering::SeqCst) {
 			UNINITIALIZED => {
 				//неинициализированным
@@ -80,7 +80,7 @@ impl<T> UnkStaticData<T, AtomicU8> {
 	}
 	
 	#[inline]
-	fn raw_ignore_init_logic(&self) {
+	fn raw_ignore_initialize_logic(&self) {
 		//self.sync_data.store(EARLY_GET, Ordering::SeqCst);
 		let _e = self.sync_data.compare_and_swap(UNINITIALIZED, INITIALIZING, Ordering::SeqCst);
 	}
@@ -112,6 +112,7 @@ impl<T> UnsafeGenericStaticData<T> for UnkStaticData<&'static T, AtomicU8> where
 }
 
 impl<T> GenericStaticData<T> for UnkStaticData<T, AtomicU8> {
+	
 	fn set(&self, v: T) -> Result<(), StaticErr<T>> {
 		self.lock_logic::<StaticErr_Prev, _, _, _>(v, 
 			|v| { unsafe { *self.data.get() = v; } Ok( () )},
@@ -136,16 +137,16 @@ impl<T> GenericStaticData<T> for UnkStaticData<T, AtomicU8> {
 		unsafe{ &*self.data.get() }
 	}
 	
-	fn ignore_init(&self) -> Result<(), IgnoreInitErr> {
-		self.ignore_init_logic::<IgnoreInitErr_Prev, _, _>( 
+	fn ignore_initialize(&self) -> Result<(), IgnoreInitErr> {
+		self.ignore_initialize_logic::<IgnoreInitErr_Prev, _, _>( 
 			|| Ok( () ),
 			//|| Err( IgnoreInitErr::prev() )
 		)
 	}
 	
 	#[inline(always)]
-	fn ignore_init_dont_result(&self) {
-		self.raw_ignore_init_logic()
+	fn ignore_initialize_dont_result(&self) {
+		self.raw_ignore_initialize_logic()
 	}
 	
 	#[inline(always)]
