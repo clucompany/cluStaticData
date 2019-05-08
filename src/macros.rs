@@ -61,6 +61,7 @@ macro_rules! static_data {
 		#[doc(hidden)]
 		mod $name {
 			use super::*;
+			#[cfg(feature = "enable_runtime")]
 			$crate::new_lazy_struct! {
 				$(#[$($mt)*])*
 				pub(crate) _HIDDEN : $t = $a;
