@@ -26,10 +26,10 @@ impl MyTrait for usize {
 }
 
 fn main() {
-	println!("#0 {:?}", TEST);
 	assert_eq!(TEST.is_true(), false);
+	println!("OK #0 {:?}", TEST);
 	
 	let err = TEST.set(&10);
-	println!("#1 {:?}, result: {:?}", TEST, err);
 	assert_eq!(TEST.is_true(), true);
+	println!("OK #1 {:?}, result: {:?}", TEST, err);
 }

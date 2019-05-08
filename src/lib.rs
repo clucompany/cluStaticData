@@ -104,9 +104,9 @@ Licensed under the Apache License, Version 2.0
 
 #![allow(non_snake_case)]
 
+use std::sync::atomic::AtomicU8;
 use crate::err::IgnoreInitErr;
 use crate::err::StaticErr;
-use std::sync::atomic::AtomicUsize;
 use crate::static_core::AlwaysLockOnce;
 use std::fmt::Display;
 use std::fmt::Debug;
@@ -115,41 +115,21 @@ use std::ops::Deref;
 use std::fmt;
 
 pub mod err;
-pub (crate) mod static_core;
 
+#[macro_use]
+mod macros;
+pub use self::macros::*;
 
-#[macro_export]
-macro_rules! static_data {
-	//static data
-	[
-		$(#[$($mt:tt)*])*
-		static ref $name:ident: $t: ty = $a:expr;	$($tt:tt)*
-	] => {
-		$(#[$($mt)*])*
-		static $name: $crate::StaticData<$t> = $crate::StaticData::new($a);
-		
-		static_data! {
-			$($tt)*
-		}
-	};
+pub mod static_core {
+	mod always_lock;
+	pub use self::always_lock::*;
 	
-	[
-		$(#[$($mt:tt)*])*
-		pub $(($($at:tt)*))* static ref $name:ident: $t: ty = $a:expr;	$($tt:tt)*
-	] => {
-		$(#[$($mt)*])*
-		pub $(($($at)*))* static $name: $crate::StaticData<$t> = $crate::StaticData::new($a);
-
-		
-		static_data! {
-			$($tt)*
-		}
-	};
-	
-	() => ()
+	mod atomic_lock;
+	pub use self::atomic_lock::*;
 }
 
-pub type StaticData<T>		= UnkStaticData<T, AtomicUsize>;
+
+pub type StaticData<T>			= UnkStaticData<T, AtomicU8>;
 pub type StaticDataAlwaysLock<T>	= UnkStaticData<T, AlwaysLockOnce>;
 
 pub struct UnkStaticData<T, I> {
@@ -172,9 +152,6 @@ impl<T, I> UnkStaticData<T, I> where Self: UnsafeGenericStaticData<T> {
 		UnsafeGenericStaticData::set_raw(self, v)
 	}
 }
-
-
-
 
 impl<T, I> UnkStaticData<T, I> where Self: GenericStaticData<T> {
 	#[inline(always)]
@@ -258,7 +235,6 @@ pub trait GenericStaticData<T> {
 	unsafe fn unsafe_replace(&self, v: T) -> T;
 	
 	fn get<'a>(&'a self) -> &'a T;
-	
 	
 	
 	fn ignore_init(&self) -> Result<(), IgnoreInitErr>;

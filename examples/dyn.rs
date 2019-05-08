@@ -2,7 +2,6 @@
 #[macro_use]
 extern crate cluStaticData;
 
-use cluStaticData::StaticData;
 use std::fmt::Debug;
 use cluStaticData::err::StaticErr;
 
@@ -12,31 +11,30 @@ static_data! {
 }
 
 pub trait MyTrait: Debug + Sync {
-	
+	fn data(&self) -> usize;
 }
 
 impl MyTrait for () {
-	
+	#[inline]
+	fn data(&self) -> usize {
+		0
+	}
 }
 
 impl MyTrait for usize {
-	
+	#[inline]
+	fn data(&self) -> usize {
+		*self
+	}
 }
 
 fn main() -> Result<(), StaticErr<&'static (dyn MyTrait + 'static)>> {
-	let bb: &MyTrait = *TEST;
+	let _result = TEST.set(&10)?;
+	println!("OK {:?}, data: {:?}", TEST, TEST.data());
 	
-	let _cc: &StaticData<&'static (dyn MyTrait + 'static)> = &TEST;
-	
-	let result = TEST.set(&10)?;
-	
-	//println!("{:?}", aa);
-	println!("{:?}", bb);
-	println!("{:?}", TEST);
-	println!("{:?}", result);
-	
-	let result = TEST.set(&20);
-	println!("{:?}", result);
+	let err = TEST.set(&20);
+	assert_eq!(err.err().unwrap().into_inner().data(), 20);
+	println!("OK {:?}, data: {:?}", TEST, TEST.data());
 	
 	Ok( () )
 }
