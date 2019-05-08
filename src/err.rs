@@ -122,7 +122,7 @@ impl<T> Deref for StaticErr<T> {
 	}
 }
 
-impl<T> DerefMut for StaticErr<T> {	
+impl<T> DerefMut for StaticErr<T> {
 	#[inline(always)]
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		&mut self.r#type

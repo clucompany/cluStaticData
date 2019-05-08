@@ -99,6 +99,30 @@ fn main() {
 }
 ```
 
+# Use Runtime
+
+```
+#[macro_use]
+extern crate cluStaticData;
+
+use std::collections::HashMap;
+
+static_data! {
+	pub(crate) static ref +runtime HASH_MAP: HashMap<String, String> = {
+		let mut hash_map = HashMap::new();
+		hash_map.insert("test".to_string(), "b".to_string());
+		hash_map.insert("test2".to_string(), "b2".to_string());
+
+		hash_map
+	};
+	static ref +runtime HASH_MAP2: usize = 0;
+}
+
+fn main() {
+	println!("{:?}", HASH_MAP);
+}
+```
+
 # License
 
 Copyright 2019 #UlinProject Denis Kotlyarov (Денис Котляров)
@@ -107,6 +131,7 @@ Licensed under the Apache License, Version 2.0
 */
 
 #![allow(non_snake_case)]
+
 
 use std::sync::atomic::AtomicU8;
 use crate::err::IgnoreInitErr;
@@ -190,7 +215,7 @@ impl<T, I> UnkStaticData<T, I> where Self: GenericStaticData<T> {
 	
 	#[inline(always)]
 	pub fn is_init_state(&self) -> bool {
-		GenericStaticData::is_init_state(self)	
+		GenericStaticData::is_init_state(self)
 	}
 	
 	#[inline(always)]
@@ -256,5 +281,12 @@ pub trait GenericStaticData<T> {
 pub trait UnsafeGenericStaticData<T> {
 	unsafe fn set_box(&self, v: Box<T>) -> Result<(), StaticErr<Box<T>>>;
 	unsafe fn set_raw(&self, v: T) -> Result<(), StaticErr<T>>;
+}
+
+
+#[cfg(feature = "enable_runtime")]
+pub mod RuntimeStaticData {
+	extern crate spin;
+	pub use self::spin::Once;
 }
 

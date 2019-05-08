@@ -86,6 +86,30 @@ fn main() {
 }
 ```
 
+# Use Runtime
+
+```
+#[macro_use]
+extern crate cluStaticData;
+
+use std::collections::HashMap;
+
+static_data! {
+	pub(crate) static ref +runtime HASH_MAP: HashMap<String, String> = {
+		let mut hash_map = HashMap::new();
+		hash_map.insert("test".to_string(), "b".to_string());
+		hash_map.insert("test2".to_string(), "b2".to_string());
+
+		hash_map
+	};
+	static ref +runtime HASH_MAP2: usize = 0;
+}
+
+fn main() {
+	println!("{:?}", HASH_MAP);
+}
+```
+
 # License
 
 Copyright 2019 #UlinProject Denis Kotlyarov (Денис Котляров)
