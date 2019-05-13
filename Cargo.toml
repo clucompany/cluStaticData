@@ -12,14 +12,8 @@ description = "Methods for describing and creating static values. Implemented st
 keywords = ["static_data", "static_data_on_runtime", "cluStaticData", "clucompany"]
 categories = ["development-tools"]
 
-[features]
-default = []
-once_runtime = ["spin"]
-trivial_bounds = []
-
 [dependencies.spin]
 version = "0.5.0"
-optional = true
 
 
 [dependencies]

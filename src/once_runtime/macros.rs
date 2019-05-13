@@ -112,7 +112,7 @@ macro_rules! new_lazy_struct {
 			}
 		}
 		
-		#[cfg(feature = "trivial_bounds")]
+		//#[cfg(feature = "trivial_bounds")]
 		impl core::fmt::Display for $name 
 			where <Self as core::ops::Deref>::Target:	core::fmt::Display 
 			{

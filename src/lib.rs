@@ -132,11 +132,7 @@ Licensed under the Apache License, Version 2.0
 
 #![allow(non_snake_case)]
 
-
-
-#[cfg(feature = "once_runtime")]
 pub mod once_runtime;
-
 pub mod once_const_static;
 
 
