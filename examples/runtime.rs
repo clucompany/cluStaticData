@@ -5,7 +5,7 @@ extern crate cluStaticData;
 
 use std::collections::HashMap;
 
-//cargo run --example runtime --features "enable_runtime, trivial_bounds"
+//cargo run --example runtime --features "once_runtime, trivial_bounds"
 
 static_data! {
 	pub(crate) static ref +runtime HASH_MAP: HashMap<String, String> = {

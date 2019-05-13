@@ -1,9 +1,9 @@
 
+use crate::once_const_static::generic::UnsafeGenericStaticData;
+use crate::once_const_static::UnkStaticData;
+use crate::once_const_static::generic::GenericStaticData;
 use crate::err::IgnoreInitErr;
-use crate::GenericStaticData;
-use crate::UnsafeGenericStaticData;
 use crate::err::StaticErr;
-use crate::UnkStaticData;
 use std::cell::UnsafeCell;
 
 #[derive(Debug)]

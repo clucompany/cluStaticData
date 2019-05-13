@@ -1,6 +1,6 @@
 [package]
 name = "cluStaticData"
-version = "1.1.8"
+version = "1.1.9"
 authors = ["Denis Kotlyarov (Денис Котляров) <denis2005991@gmail.com>"]
 exclude = ["/.travis.yml"]
 repository = "https://github.com/clucompany/cluStaticData.git"
@@ -9,12 +9,12 @@ readme = "README.md"
 edition = "2018"
 
 description = "Methods for describing and creating static values. Implemented static value constructors executed in real-time."
-keywords = ["static_data", "cluStaticData", "clucompany"]
+keywords = ["static_data", "static_data_on_runtime", "cluStaticData", "clucompany"]
 categories = ["development-tools"]
 
 [features]
 default = []
-enable_runtime = ["spin"]
+once_runtime = ["spin"]
 trivial_bounds = []
 
 [dependencies.spin]

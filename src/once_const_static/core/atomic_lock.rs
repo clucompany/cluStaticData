@@ -1,12 +1,15 @@
 
-use std::sync::atomic::AtomicU8;
+use core::sync::atomic::AtomicU8;
+use core::sync::atomic::Ordering;
+use core::cell::UnsafeCell;
+
+use crate::once_const_static::generic::UnsafeGenericStaticData;
+use crate::once_const_static::generic::GenericStaticData;
+use crate::once_const_static::UnkStaticData;
+
 use crate::err::IgnoreInitErr;
-use crate::GenericStaticData;
-use crate::UnsafeGenericStaticData;
 use crate::err::StaticErr;
-use crate::UnkStaticData;
-use std::sync::atomic::Ordering;
-use std::cell::UnsafeCell;
+
 
 const UNINITIALIZED: u8 = 0;
 //неинициализированным
@@ -112,7 +115,6 @@ impl<T> UnsafeGenericStaticData<T> for UnkStaticData<&'static T, AtomicU8> where
 }
 
 impl<T> GenericStaticData<T> for UnkStaticData<T, AtomicU8> {
-	
 	fn set(&self, v: T) -> Result<(), StaticErr<T>> {
 		self.lock_logic::<StaticErr_Prev, _, _, _>(v, 
 			|v| { unsafe { *self.data.get() = v; } Ok( () )},
