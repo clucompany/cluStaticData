@@ -92,7 +92,7 @@ impl<T> UnkStaticData<T, AtomicU8> {
 
 impl<T> UnsafeGenericStaticData<T> for UnkStaticData<&'static T, AtomicU8> where T: 'static {
 	unsafe fn set_box(&self, v: Box<T>) -> Result<(), StaticErr<Box<T>>> {
-		self.lock_logic::<StaticErr_Prev, _, _, _>(v, |v| {
+		self.lock_logic::<StaticErrPrev, _, _, _>(v, |v| {
 			#[allow(unused_unsafe)]
 			unsafe {
 				*self.data.get() = &*Box::into_raw(v);
@@ -102,7 +102,7 @@ impl<T> UnsafeGenericStaticData<T> for UnkStaticData<&'static T, AtomicU8> where
 	}
 	
 	unsafe fn set_raw(&self, v: T) -> Result<(), StaticErr<T>> {
-		self.lock_logic::<StaticErr_Prev, _, _, _>(v, |v| {
+		self.lock_logic::<StaticErrPrev, _, _, _>(v, |v| {
 			let v = Box::new(v);
 			
 			#[allow(unused_unsafe)]
@@ -116,14 +116,14 @@ impl<T> UnsafeGenericStaticData<T> for UnkStaticData<&'static T, AtomicU8> where
 
 impl<T> GenericStaticData<T> for UnkStaticData<T, AtomicU8> {
 	fn set(&self, v: T) -> Result<(), StaticErr<T>> {
-		self.lock_logic::<StaticErr_Prev, _, _, _>(v, 
+		self.lock_logic::<StaticErrPrev, _, _, _>(v, 
 			|v| { unsafe { *self.data.get() = v; } Ok( () )},
 			//|v| Err(StaticErr::prev(v))
 		)
 	}
 	
 	fn replace(&self, v: T) -> Result<T, StaticErr<T>> {
-		self.lock_logic::<StaticErr_Prev, _, _, _>(v, 
+		self.lock_logic::<StaticErrPrev, _, _, _>(v, 
 			|v| Ok(	std::mem::replace(unsafe { &mut *self.data.get() }, v)	),
 			//|v| Err(	StaticErr::prev(v)							),
 			
@@ -140,7 +140,7 @@ impl<T> GenericStaticData<T> for UnkStaticData<T, AtomicU8> {
 	}
 	
 	fn ignore_initialize(&self) -> Result<(), IgnoreInitErr> {
-		self.ignore_initialize_logic::<IgnoreInitErr_Prev, _, _>( 
+		self.ignore_initialize_logic::<IgnoreInitErrPrev, _, _>( 
 			|| Ok( () ),
 			//|| Err( IgnoreInitErr::prev() )
 		)
@@ -163,18 +163,17 @@ trait AtomicGenErr<D, T> {
 }
 
 
-#[allow(non_camel_case_types)]
-enum IgnoreInitErr_Prev {}
-impl<OKR, D> AtomicGenErr<D, Result<OKR, IgnoreInitErr>> for IgnoreInitErr_Prev {
+enum IgnoreInitErrPrev {}
+impl<OKR, D> AtomicGenErr<D, Result<OKR, IgnoreInitErr>> for IgnoreInitErrPrev {
 	#[inline(always)]
 	fn create_err(_d: D) -> Result<OKR, IgnoreInitErr> {
 		Err(IgnoreInitErr::prev())
 	}
 }
 
-#[allow(non_camel_case_types)]
-enum StaticErr_Prev {}
-impl<OKR, D> AtomicGenErr<D, Result<OKR, StaticErr<D>>> for StaticErr_Prev {
+
+enum StaticErrPrev {}
+impl<OKR, D> AtomicGenErr<D, Result<OKR, StaticErr<D>>> for StaticErrPrev {
 	#[inline(always)]
 	fn create_err(d: D) -> Result<OKR, StaticErr<D>> {
 		Err(StaticErr::prev(d))

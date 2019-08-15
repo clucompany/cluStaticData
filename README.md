@@ -4,9 +4,13 @@
 [![crates.io](http://meritbadge.herokuapp.com/cluStaticData)](https://crates.io/crates/cluStaticData)
 [![Documentation](https://docs.rs/cluStaticData/badge.svg)](https://docs.rs/cluStaticData)
 
-Methods for describing and creating static values. Implemented static value constructors executed in real-time.
+Initializers of static values. Manual initialization (using safe functions and zero cost when accessing an object) or automatic initialization during accessing an object (there is no zero cost when accessing an object; you must set the correct default value).
 
-# Use (static trait data)
+1. Manual initialization of static data.
+2. Automatic initialization of static data.
+
+
+# Use (Manual initialization of static data)
 
 ```
 #[macro_use]
@@ -50,7 +54,7 @@ fn main() -> Result<(), StaticErr<&'static (dyn MyTrait + 'static)>> {
 }
 ```
 
-# Use (static data, unk type)
+# Use 2 (Manual initialization of static data)
 
 ```
 #[macro_use]
@@ -86,7 +90,7 @@ fn main() {
 }
 ```
 
-# Use Runtime
+# Use 3 (Automatic initialization of static data)
 
 ```
 #[macro_use]

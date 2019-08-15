@@ -1,5 +1,5 @@
 
-
+#[doc(hidden)]
 #[macro_export]
 macro_rules! once_const_static_data {
 	[$(#[$($mt:tt)*])* static ref $name:ident: $t: ty = $a:expr; $($tt:tt)*] => {

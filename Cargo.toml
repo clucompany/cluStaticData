@@ -1,6 +1,6 @@
 [package]
 name = "cluStaticData"
-version = "1.1.9"
+version = "1.2.0"
 authors = ["Denis Kotlyarov (Денис Котляров) <denis2005991@gmail.com>"]
 exclude = ["/.travis.yml"]
 repository = "https://github.com/clucompany/cluStaticData.git"
@@ -8,12 +8,12 @@ license = "Apache-2.0"
 readme = "README.md"
 edition = "2018"
 
-description = "Methods for describing and creating static values. Implemented static value constructors executed in real-time."
-keywords = ["static_data", "static_data_on_runtime", "cluStaticData", "clucompany"]
+description = "Initializers of static values. Manual initialization (using safe functions and zero cost when accessing an object) or automatic initialization during accessing an object (there is no zero cost when accessing an object; you must set the correct default value)."
+keywords = ["manual_initialization_of_static_data", "automatic_initialization_of_static_data", "static_data", "clucompany"]
 categories = ["development-tools"]
 
 [dependencies.spin]
-version = "0.5.0"
+version = "0.5.1"
 
 
 [dependencies]

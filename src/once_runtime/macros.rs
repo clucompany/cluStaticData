@@ -1,7 +1,7 @@
 
 
 
-
+#[doc(hidden)]
 #[macro_export]
 macro_rules! once_runtime_data {
 	[$(#[$($mt:tt)*])* static ref +runtime $name:ident: $t: ty = $a:expr; $($tt:tt)*] => {
