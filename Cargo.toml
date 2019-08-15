@@ -8,7 +8,7 @@ license = "Apache-2.0"
 readme = "README.md"
 edition = "2018"
 
-description = "Initializers of static values. Manual initialization (using safe functions and zero cost when accessing an object) or automatic initialization during accessing an object (there is no zero cost when accessing an object; you must set the correct default value)."
+description = "Initializers of static values. Manual initialization, automatic initialization."
 keywords = ["manual_initialization_of_static_data", "automatic_initialization_of_static_data", "static_data", "clucompany"]
 categories = ["development-tools"]
 
