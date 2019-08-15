@@ -4,9 +4,12 @@ rust:
   - stable
   - beta
   - nightly
+branches:
+  only:
+    - master
 matrix:
   allow_failures:
-- rust: nightly
+  - rust: nightly
 script:
   - cargo build --verbose
   - cargo test --verbose
