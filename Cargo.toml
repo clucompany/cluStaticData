@@ -9,7 +9,7 @@ readme = "README.md"
 edition = "2018"
 
 description = "Initializers of static values. Manual initialization, automatic initialization."
-keywords = ["manual_initialization", "automatic_initialization", "static_data", "clucompany"]
+keywords = ["manual_init", "automatic_init", "static_data", "clucompany"]
 categories = ["development-tools"]
 
 [dependencies.spin]
