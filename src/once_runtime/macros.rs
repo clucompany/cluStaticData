@@ -102,7 +102,7 @@ macro_rules! new_lazy_struct {
 			}
 		}
 		
-		impl core::fmt::Debug for $name 
+		impl core::fmt::Debug for $name
 			where <Self as core::ops::Deref>::Target:	core::fmt::Debug 
 			{
 				
@@ -112,8 +112,8 @@ macro_rules! new_lazy_struct {
 			}
 		}
 		
-		//#[cfg(feature = "trivial_bounds")]
-		impl core::fmt::Display for $name 
+		#[cfg(feature = "nightly")]
+		impl core::fmt::Display for $name
 			where <Self as core::ops::Deref>::Target:	core::fmt::Display 
 			{
 			

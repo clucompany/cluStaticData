@@ -1,4 +1,3 @@
-#![feature(trivial_bounds)]
 
 #[macro_use]
 extern crate cluStaticData;
@@ -29,5 +28,7 @@ static_data! {
 fn main() {
 	println!("{:?}", HASH_MAP);
 	println!("{:?}", VEC);
+	
+	#[cfg(feature = "nightly")]
 	println!("{}", STR);
 }

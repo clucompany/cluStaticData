@@ -136,6 +136,10 @@ Licensed under the Apache License, Version 2.0
 
 #![allow(non_snake_case)]
 
+#![cfg_attr(feature = "nightly", feature(trivial_bounds))]
+
+
+
 pub mod once_runtime;
 pub mod once_const_static;
 
