@@ -12,7 +12,7 @@ Initializers of static values. Manual initialization (using safe functions and z
 
 # Use (Manual initialization of static data)
 
-```
+```rust
 #[macro_use]
 extern crate cluStaticData;
 
@@ -56,7 +56,7 @@ fn main() -> Result<(), StaticErr<&'static (dyn MyTrait + 'static)>> {
 
 # Use 2 (Manual initialization of static data)
 
-```
+```rust
 #[macro_use]
 extern crate cluStaticData;
 use cluStaticData::err::StaticErr;
@@ -92,7 +92,7 @@ fn main() {
 
 # Use 3 (Automatic initialization of static data)
 
-```
+```rust
 #[macro_use]
 extern crate cluStaticData;
 
